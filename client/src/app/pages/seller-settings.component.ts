@@ -1,9 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { SellerService } from '../services/seller.service';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-seller-settings',
@@ -91,6 +92,20 @@ import { SellerService } from '../services/seller.service';
                 <label>Business Address</label>
                 <textarea [(ngModel)]="profileForm.businessAddress" placeholder="Your business address" rows="2" style="width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
               </div>
+
+              <!-- Store Location Map -->
+              <div class="settings-form-group">
+                <label><i class="pi pi-map-marker" style="margin-right: 6px; color: #ff6b35;"></i>Store Location</label>
+                <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px;">Click on the map to set your store's location. This is used for shipping route display.</p>
+                <div id="sellerLocationMap" style="width: 100%; height: 300px; border-radius: 10px; border: 1px solid #e5e7eb; overflow: hidden;"></div>
+                <div style="display: flex; gap: 12px; margin-top: 8px;" *ngIf="profileForm.latitude && profileForm.longitude">
+                  <span style="font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 4px 10px; border-radius: 6px;">
+                    <i class="pi pi-map-marker" style="color: #ff6b35; margin-right: 4px;"></i>
+                    {{ profileForm.latitude | number:'1.5-5' }}, {{ profileForm.longitude | number:'1.5-5' }}
+                  </span>
+                </div>
+              </div>
+
               <div class="settings-actions">
                 <button class="save-btn" (click)="updateProfile()" [disabled]="isSavingProfile">
                   @if (isSavingProfile) {
@@ -162,7 +177,7 @@ import { SellerService } from '../services/seller.service';
     </div>
   `,
 })
-export class SellerSettingsComponent implements OnInit {
+export class SellerSettingsComponent implements OnInit, OnDestroy {
   shopName = '';
   sellerId = '';
   userId = '';
@@ -175,11 +190,13 @@ export class SellerSettingsComponent implements OnInit {
   passwordMsg = '';
   passwordMsgType = '';
 
-  profileForm = {
+  profileForm: any = {
     shopName: '',
     shopDescription: '',
     phone: '',
     businessAddress: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
   };
 
   passwordForm = {
@@ -187,6 +204,9 @@ export class SellerSettingsComponent implements OnInit {
     newPassword: '',
     confirmPassword: '',
   };
+
+  private locationMap: any = null;
+  private locationMarker: any = null;
 
   constructor(
     private authService: AuthService,
@@ -217,15 +237,66 @@ export class SellerSettingsComponent implements OnInit {
             shopDescription: res.data.shopDescription || '',
             phone: res.data.phone || '',
             businessAddress: res.data.businessAddress || '',
+            latitude: res.data.latitude ? parseFloat(res.data.latitude) : null,
+            longitude: res.data.longitude ? parseFloat(res.data.longitude) : null,
           };
         }
         this.cdr.detectChanges();
+        setTimeout(() => this.initLocationMap(), 200);
       },
       error: () => {
         this.isLoadingProfile = false;
         this.cdr.detectChanges();
+        setTimeout(() => this.initLocationMap(), 200);
       },
     });
+  }
+
+  initLocationMap() {
+    if (this.locationMap) return;
+    const mapEl = document.getElementById('sellerLocationMap');
+    if (!mapEl) return;
+
+    const defaultLat = this.profileForm.latitude || 14.5995;
+    const defaultLng = this.profileForm.longitude || 120.9842;
+    const defaultZoom = this.profileForm.latitude ? 15 : 6;
+
+    this.locationMap = L.map('sellerLocationMap').setView([defaultLat, defaultLng], defaultZoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.locationMap);
+
+    // Place existing marker if lat/lng saved
+    if (this.profileForm.latitude && this.profileForm.longitude) {
+      this.placeMarker(this.profileForm.latitude, this.profileForm.longitude);
+    }
+
+    // Click to set location
+    this.locationMap.on('click', (e: any) => {
+      this.profileForm.latitude = parseFloat(e.latlng.lat.toFixed(7));
+      this.profileForm.longitude = parseFloat(e.latlng.lng.toFixed(7));
+      this.placeMarker(e.latlng.lat, e.latlng.lng);
+      this.cdr.detectChanges();
+    });
+  }
+
+  placeMarker(lat: number, lng: number) {
+    const icon = L.divIcon({
+      html: '<div style="background:#ff6b35;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:white;border-radius:50%"></div></div>',
+      className: '',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
+
+    if (this.locationMarker) {
+      this.locationMarker.setLatLng([lat, lng]);
+    } else {
+      this.locationMarker = L.marker([lat, lng], { icon }).addTo(this.locationMap);
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.locationMap) this.locationMap.remove();
   }
 
   updateProfile() {

@@ -1,5 +1,6 @@
 const { Driver, Delivery, Order, OrderItem, Address, User, DeliveryHub } = require("../models");
 const { Op } = require("sequelize");
+const crypto = require("crypto");
 
 // Get driver profile
 exports.getProfile = async (req, res) => {
@@ -64,7 +65,8 @@ exports.updateDeliveryStatus = async (req, res) => {
     const validTransitions = {
       assigned: ["picked_up"],
       picked_up: ["in_transit"],
-      in_transit: ["delivered", "failed"],
+      in_transit: ["at_destination_hub", "delivered", "failed"],
+      out_for_delivery: ["delivered", "failed"],
     };
 
     if (!validTransitions[delivery.status]?.includes(status)) {
@@ -75,17 +77,16 @@ exports.updateDeliveryStatus = async (req, res) => {
 
     if (status === "picked_up") {
       updates.pickedUpAt = new Date();
-      // When driver picks up, calculate ETA based on distance
       const eta = calculateETA(delivery.distanceKm);
       updates.estimatedDelivery = eta;
-      // Update the order status to shipped and set ETA
       await delivery.order.update({ status: "shipped", estimatedDelivery: eta });
-    } else if (status === "in_transit") {
-      // Order is already shipped, keep going
+    } else if (status === "at_destination_hub") {
+      // Transfer driver arrived at destination hub
+      await driver.update({ isAvailable: true });
+      updates.driverId = null;
     } else if (status === "delivered") {
       updates.deliveredAt = new Date();
       await delivery.order.update({ status: "delivered", estimatedDelivery: null });
-      // Mark driver available
       await driver.update({ isAvailable: true });
     } else if (status === "failed") {
       updates.notes = req.body.notes || "Delivery failed";
@@ -98,6 +99,62 @@ exports.updateDeliveryStatus = async (req, res) => {
   } catch (error) {
     console.error("Update delivery status error:", error);
     res.status(500).json({ success: false, message: "Failed to update delivery status" });
+  }
+};
+
+// Scan QR code to confirm delivery
+exports.scanDelivery = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ where: { userId: req.user.id } });
+    if (!driver) return res.status(404).json({ success: false, message: "Driver not found" });
+
+    const { qrData } = req.body;
+    if (!qrData) return res.status(400).json({ success: false, message: "QR data is required" });
+
+    let parsed;
+    try {
+      parsed = JSON.parse(qrData);
+    } catch (e) {
+      return res.status(400).json({ success: false, message: "Invalid QR code data" });
+    }
+
+    const { deliveryId, trackingNumber, secret } = parsed;
+    if (!deliveryId || !trackingNumber || !secret) {
+      return res.status(400).json({ success: false, message: "Invalid QR code format" });
+    }
+
+    const delivery = await Delivery.findOne({
+      where: { id: deliveryId, driverId: driver.id },
+      include: [{ model: Order, as: "order" }],
+    });
+    if (!delivery) return res.status(404).json({ success: false, message: "Delivery not found or not assigned to you" });
+
+    if (delivery.status !== "out_for_delivery") {
+      return res.status(400).json({ success: false, message: "Delivery must be out_for_delivery to scan" });
+    }
+
+    // Verify QR secret
+    if (delivery.qrSecret !== secret || delivery.trackingNumber !== trackingNumber) {
+      return res.status(400).json({ success: false, message: "QR code verification failed" });
+    }
+
+    // Mark as delivered
+    await delivery.update({
+      status: "delivered",
+      deliveredAt: new Date(),
+    });
+
+    await delivery.order.update({
+      status: "delivered",
+      estimatedDelivery: null,
+    });
+
+    await driver.update({ isAvailable: true });
+
+    res.json({ success: true, message: "Delivery confirmed via QR scan!", data: { deliveryId: delivery.id, trackingNumber } });
+  } catch (error) {
+    console.error("Scan delivery error:", error);
+    res.status(500).json({ success: false, message: "Failed to process QR scan" });
   }
 };
 

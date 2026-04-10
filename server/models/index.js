@@ -194,6 +194,11 @@ Delivery.belongsTo(DeliveryHub, {
   as: "hub",
 });
 
+Delivery.belongsTo(DeliveryHub, {
+  foreignKey: "destinationHubId",
+  as: "destinationHub",
+});
+
 module.exports = {
   User,
   Seller,

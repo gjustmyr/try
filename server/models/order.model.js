@@ -26,8 +26,11 @@ const Order = sequelize.define(
       field: "order_number",
     },
     status: {
-      type: DataTypes.ENUM("pending", "confirmed", "processing", "shipped", "delivered", "cancelled"),
+      type: DataTypes.STRING,
       defaultValue: "pending",
+      validate: {
+        isIn: [["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"]],
+      },
     },
     subtotal: {
       type: DataTypes.DECIMAL(10, 2),
@@ -46,6 +49,11 @@ const Order = sequelize.define(
       type: DataTypes.ENUM("cod"),
       defaultValue: "cod",
       field: "payment_method",
+    },
+    trackingNumber: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "tracking_number",
     },
     notes: {
       type: DataTypes.TEXT,

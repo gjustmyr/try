@@ -107,6 +107,11 @@ import { OrderService } from '../services/order.service';
                     <div class="addr-name">{{ addr.fullName }}</div>
                     <div class="addr-phone">{{ addr.phone }}</div>
                     <div class="addr-full">{{ addr.streetAddress }}, {{ addr.barangay }}, {{ addr.city }}, {{ addr.province }}, {{ addr.region }} {{ addr.postalCode }}</div>
+                    <div class="addr-actions">
+                      <button class="addr-delete-btn" (click)="deleteAddress(addr)" [disabled]="addr.isDefault" [title]="addr.isDefault ? 'Cannot delete default address' : 'Delete address'">
+                        <i class="pi pi-trash"></i> Remove
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -168,6 +173,10 @@ import { OrderService } from '../services/order.service';
                     </div>
                     <div class="order-footer">
                       <div class="order-date">{{ order.createdAt | date:'MMM d, yyyy h:mm a' }}</div>
+                      <div class="order-tracking-info" *ngIf="order.trackingNumber">
+                        <i class="pi pi-barcode"></i>
+                        <span>Tracking: <strong>{{ order.trackingNumber }}</strong></span>
+                      </div>
                       <div class="order-eta" *ngIf="order.estimatedDelivery && order.status !== 'delivered' && order.status !== 'cancelled'">
                         <i class="pi pi-truck"></i>
                         <span>ETA: {{ order.estimatedDelivery | date:'MMM d, yyyy' }}</span>
@@ -316,6 +325,14 @@ import { OrderService } from '../services/order.service';
     .addr-name { font-size: 14px; font-weight: 600; color: #1f2937; }
     .addr-phone { font-size: 13px; color: #6b7280; margin: 2px 0 8px; }
     .addr-full { font-size: 13px; color: #4b5563; line-height: 1.5; }
+    .addr-actions { margin-top: 12px; display: flex; gap: 8px; }
+    .addr-delete-btn {
+      padding: 5px 12px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626;
+      border-radius: 6px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px;
+      transition: all 0.2s;
+    }
+    .addr-delete-btn:hover:not(:disabled) { background: #fee2e2; border-color: #f87171; }
+    .addr-delete-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* Order Tabs */
     .order-tabs {
@@ -410,6 +427,15 @@ import { OrderService } from '../services/order.service';
     .order-eta.delivered {
       color: #059669; background: #ecfdf5; border-color: #a7f3d0;
     }
+
+    .order-tracking-info {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: #7c3aed;
+      background: #f5f3ff; padding: 4px 12px; border-radius: 20px;
+      border: 1px solid #ddd6fe;
+    }
+    .order-tracking-info i { font-size: 14px; }
+    .order-tracking-info strong { font-family: monospace; letter-spacing: 0.5px; color: #5b21b6; }
 
     /* Security */
     .security-card {
@@ -520,6 +546,19 @@ export class ProfileComponent implements OnInit {
       error: () => {
         this.loadingAddresses = false;
         this.cdr.detectChanges();
+      },
+    });
+  }
+
+  deleteAddress(addr: any) {
+    if (addr.isDefault) return;
+    if (!confirm('Are you sure you want to remove this address?')) return;
+    this.addressService.deleteAddress(addr.id).subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          this.addresses = this.addresses.filter((a: any) => a.id !== addr.id);
+          this.cdr.detectChanges();
+        }
       },
     });
   }

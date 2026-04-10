@@ -103,6 +103,7 @@ exports.getTracking = async (req, res) => {
         },
         { model: Driver, as: "driver", attributes: ["id", "fullName", "phone", "vehicleType", "currentLatitude", "currentLongitude"] },
         { model: DeliveryHub, as: "hub", attributes: ["id", "name", "address", "latitude", "longitude"] },
+        { model: DeliveryHub, as: "destinationHub", attributes: ["id", "name", "address", "latitude", "longitude"] },
       ],
     });
 

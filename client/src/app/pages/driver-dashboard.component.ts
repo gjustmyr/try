@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -77,6 +77,9 @@ import { DriverService } from '../services/driver.service';
                 <button class="status-btn deliver" *ngIf="activeDelivery.status === 'in_transit'" (click)="updateStatus(activeDelivery, 'delivered')">
                   <i class="pi pi-check"></i> Mark Delivered
                 </button>
+                <button class="status-btn scan" *ngIf="activeDelivery.status === 'out_for_delivery'" (click)="openQRScanner(activeDelivery)">
+                  <i class="pi pi-qrcode"></i> Scan QR to Deliver
+                </button>
                 <button class="status-btn fail" *ngIf="activeDelivery.status !== 'delivered' && activeDelivery.status !== 'failed'" (click)="updateStatus(activeDelivery, 'failed')">
                   <i class="pi pi-times"></i> Failed
                 </button>
@@ -114,6 +117,7 @@ import { DriverService } from '../services/driver.service';
                   <button class="status-btn pickup" *ngIf="d.status === 'assigned'" (click)="updateStatus(d, 'picked_up')"><i class="pi pi-box"></i> Pick Up</button>
                   <button class="status-btn transit" *ngIf="d.status === 'picked_up'" (click)="updateStatus(d, 'in_transit')"><i class="pi pi-send"></i> In Transit</button>
                   <button class="status-btn deliver" *ngIf="d.status === 'in_transit'" (click)="updateStatus(d, 'delivered')"><i class="pi pi-check"></i> Delivered</button>
+                  <button class="status-btn scan" *ngIf="d.status === 'out_for_delivery'" (click)="openQRScanner(d)"><i class="pi pi-qrcode"></i> Scan QR to Deliver</button>
                   <button class="status-btn fail" (click)="updateStatus(d, 'failed')"><i class="pi pi-times"></i> Failed</button>
                 </div>
               </div>
@@ -122,6 +126,42 @@ import { DriverService } from '../services/driver.service';
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div class="modal-overlay" *ngIf="showQRScanner">
+      <div class="modal-box qr-modal">
+        <div class="qr-header">
+          <h3><i class="pi pi-qrcode"></i> Scan Parcel QR Code</h3>
+          <button class="close-btn" (click)="closeQRScanner()"><i class="pi pi-times"></i></button>
+        </div>
+        <p class="qr-instruction">Point your camera at the QR code on the parcel to confirm delivery.</p>
+        <div id="qr-reader" class="qr-reader-box"></div>
+        <div class="qr-manual">
+          <p>Or enter QR data manually:</p>
+          <div class="manual-input-row">
+            <input type="text" [(ngModel)]="manualQRInput" placeholder="Paste QR code data..." class="manual-qr-input" />
+            <button class="status-btn scan" (click)="submitManualQR()" [disabled]="!manualQRInput.trim() || scanning">
+              <i class="pi pi-check"></i> Submit
+            </button>
+          </div>
+        </div>
+        <div class="qr-status scanning" *ngIf="scanning"><i class="pi pi-spin pi-spinner"></i> Verifying...</div>
+      </div>
+    </div>
+
+    <!-- Scan Result Modal -->
+    <div class="modal-overlay" *ngIf="showScanResult">
+      <div class="modal-box">
+        <div class="modal-icon" [attr.data-type]="scanSuccess ? 'success' : 'danger'">
+          <i [class]="scanSuccess ? 'pi pi-check-circle' : 'pi pi-times-circle'"></i>
+        </div>
+        <h3>{{ scanSuccess ? 'Delivery Confirmed!' : 'Scan Failed' }}</h3>
+        <p>{{ scanResultMessage }}</p>
+        <div class="modal-actions">
+          <button class="modal-btn primary" (click)="closeScanResult()">OK</button>
+        </div>
+      </div>
     </div>
   `,
   styles: [`
@@ -184,6 +224,10 @@ import { DriverService } from '../services/driver.service';
     .status-chip[data-status="assigned"] { background: #fef3c7; color: #92400e; }
     .status-chip[data-status="picked_up"] { background: #dbeafe; color: #1e40af; }
     .status-chip[data-status="in_transit"] { background: #e0e7ff; color: #3730a3; }
+    .status-chip[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
+    .status-chip[data-status="at_destination_hub"] { background: #fdf4ff; color: #86198f; }
+    .status-chip[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
+    .status-chip[data-status="received_at_hub"] { background: #ecfdf5; color: #065f46; }
     .status-chip[data-status="delivered"] { background: #dcfce7; color: #166534; }
     .status-chip[data-status="failed"] { background: #fee2e2; color: #991b1b; }
 
@@ -191,7 +235,9 @@ import { DriverService } from '../services/driver.service';
     .status-btn.pickup { background: #3b82f6; } .status-btn.pickup:hover { background: #2563eb; }
     .status-btn.transit { background: #8b5cf6; } .status-btn.transit:hover { background: #7c3aed; }
     .status-btn.deliver { background: #22c55e; } .status-btn.deliver:hover { background: #16a34a; }
+    .status-btn.scan { background: #0891b2; } .status-btn.scan:hover { background: #0e7490; }
     .status-btn.fail { background: #ef4444; } .status-btn.fail:hover { background: #dc2626; }
+    .status-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     /* Delivery Cards */
     .deliveries-list { display: flex; flex-direction: column; gap: 12px; }
@@ -207,6 +253,46 @@ import { DriverService } from '../services/driver.service';
     .empty-state { text-align: center; padding: 60px 20px; color: #6b7280; }
     .empty-state i { font-size: 36px; color: #d1d5db; display: block; margin-bottom: 12px; }
 
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5); display: flex; align-items: center;
+      justify-content: center; z-index: 2000;
+    }
+    .modal-box {
+      background: white; border-radius: 16px; padding: 32px; text-align: center;
+      max-width: 440px; width: 90%;
+    }
+    .modal-icon i { font-size: 48px; }
+    .modal-icon[data-type="success"] i { color: #22c55e; }
+    .modal-icon[data-type="danger"] i { color: #ef4444; }
+    .modal-box h3 { font-size: 20px; font-weight: 700; color: #1f2937; margin: 16px 0 8px; }
+    .modal-box p { color: #4b5563; font-size: 14px; margin: 0 0 4px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 20px; justify-content: center; }
+    .modal-btn { padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+    .modal-btn.primary { background: #ff6b35; color: white; }
+    .modal-btn.primary:hover { background: #e55a28; }
+
+    /* QR Scanner Modal */
+    .qr-modal { max-width: 520px; text-align: left; }
+    .qr-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .qr-header h3 { font-size: 18px; font-weight: 700; color: #1f2937; margin: 0; display: flex; align-items: center; gap: 8px; }
+    .qr-header h3 i { color: #0891b2; }
+    .close-btn { background: none; border: none; font-size: 18px; color: #6b7280; cursor: pointer; padding: 4px; }
+    .close-btn:hover { color: #1f2937; }
+    .qr-instruction { font-size: 13px; color: #6b7280; margin: 0 0 16px; }
+    .qr-reader-box { width: 100%; min-height: 300px; border-radius: 12px; overflow: hidden; background: #000; margin-bottom: 16px; }
+    .qr-manual { border-top: 1px solid #e5e7eb; padding-top: 16px; }
+    .qr-manual p { font-size: 13px; color: #6b7280; margin: 0 0 8px; }
+    .manual-input-row { display: flex; gap: 8px; }
+    .manual-qr-input {
+      flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px;
+      font-size: 13px; outline: none; font-family: monospace;
+    }
+    .manual-qr-input:focus { border-color: #0891b2; }
+    .qr-status { display: flex; align-items: center; gap: 8px; padding: 12px; margin-top: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; }
+    .qr-status.scanning { background: #ecfeff; color: #0891b2; }
+
     @media (max-width: 768px) {
       .sidebar { width: 60px; }
       .sidebar-header span, .nav-item span, .logout-btn span { display: none; }
@@ -221,8 +307,18 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   driverStats: any = { totalDeliveries: 0, activeNow: 0, pendingPickup: 0, completedToday: 0 };
   deliveryList: any[] = [];
   statusFilter = 'all';
-  statusFilters = ['all', 'assigned', 'picked_up', 'in_transit', 'delivered', 'failed'];
+  statusFilters = ['all', 'assigned', 'picked_up', 'in_transit', 'out_for_delivery', 'at_destination_hub', 'delivered', 'failed'];
   activeDelivery: any = null;
+
+  // QR Scanner state
+  showQRScanner = false;
+  scanningDelivery: any = null;
+  manualQRInput = '';
+  scanning = false;
+  showScanResult = false;
+  scanSuccess = false;
+  scanResultMessage = '';
+  private html5QrCode: any = null;
 
   private locationInterval: any = null;
 
@@ -270,15 +366,25 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
         if (res.success && res.data.length > 0) {
           this.activeDelivery = res.data[0];
         } else {
-          // Check picked_up ones
-          this.driverService.getDeliveries('picked_up').subscribe({
-            next: (res2: any) => {
-              if (res2.success && res2.data.length > 0) {
-                this.activeDelivery = res2.data[0];
+          // Check out_for_delivery
+          this.driverService.getDeliveries('out_for_delivery').subscribe({
+            next: (res1b: any) => {
+              if (res1b.success && res1b.data.length > 0) {
+                this.activeDelivery = res1b.data[0];
               } else {
-                this.driverService.getDeliveries('assigned').subscribe({
-                  next: (res3: any) => {
-                    if (res3.success && res3.data.length > 0) this.activeDelivery = res3.data[0];
+                // Check picked_up ones
+                this.driverService.getDeliveries('picked_up').subscribe({
+                  next: (res2: any) => {
+                    if (res2.success && res2.data.length > 0) {
+                      this.activeDelivery = res2.data[0];
+                    } else {
+                      this.driverService.getDeliveries('assigned').subscribe({
+                        next: (res3: any) => {
+                          if (res3.success && res3.data.length > 0) this.activeDelivery = res3.data[0];
+                          this.cdr.detectChanges();
+                        },
+                      });
+                    }
                     this.cdr.detectChanges();
                   },
                 });
@@ -351,6 +457,99 @@ export class DriverDashboardComponent implements OnInit, OnDestroy {
   formatStatus(status: string): string {
     if (status === 'all') return 'All';
     return (status || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  async openQRScanner(delivery: any) {
+    this.scanningDelivery = delivery;
+    this.showQRScanner = true;
+    this.manualQRInput = '';
+    this.scanning = false;
+    this.cdr.detectChanges();
+
+    // Initialize html5-qrcode after DOM renders
+    setTimeout(async () => {
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode');
+        this.html5QrCode = new Html5Qrcode('qr-reader');
+        await this.html5QrCode.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText: string) => this.onQRScanSuccess(decodedText),
+          () => {}
+        );
+      } catch (err) {
+        console.warn('Camera not available, use manual input');
+      }
+    }, 300);
+  }
+
+  async closeQRScanner() {
+    if (this.html5QrCode) {
+      try { await this.html5QrCode.stop(); } catch (_) {}
+      this.html5QrCode = null;
+    }
+    this.showQRScanner = false;
+    this.scanningDelivery = null;
+    this.manualQRInput = '';
+    this.cdr.detectChanges();
+  }
+
+  onQRScanSuccess(decodedText: string) {
+    if (this.scanning) return;
+    this.processQRData(decodedText);
+  }
+
+  submitManualQR() {
+    if (!this.manualQRInput.trim()) return;
+    this.processQRData(this.manualQRInput.trim());
+  }
+
+  async processQRData(qrData: string) {
+    this.scanning = true;
+    this.cdr.detectChanges();
+
+    // Stop camera while processing
+    if (this.html5QrCode) {
+      try { await this.html5QrCode.stop(); } catch (_) {}
+    }
+
+    this.driverService.scanDelivery(qrData).subscribe({
+      next: (res: any) => {
+        this.scanning = false;
+        this.showQRScanner = false;
+        this.html5QrCode = null;
+        if (res.success) {
+          this.scanSuccess = true;
+          this.scanResultMessage = 'Parcel delivered successfully! Tracking: ' + (res.data?.trackingNumber || '');
+          // Update local delivery status
+          if (this.scanningDelivery) this.scanningDelivery.status = 'delivered';
+          if (this.activeDelivery?.id === this.scanningDelivery?.id) this.activeDelivery = null;
+          this.loadStats();
+        } else {
+          this.scanSuccess = false;
+          this.scanResultMessage = res.message || 'Verification failed.';
+        }
+        this.showScanResult = true;
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.scanning = false;
+        this.showQRScanner = false;
+        this.html5QrCode = null;
+        this.scanSuccess = false;
+        this.scanResultMessage = err.error?.message || 'QR scan verification failed.';
+        this.showScanResult = true;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  closeScanResult() {
+    this.showScanResult = false;
+    this.scanSuccess = false;
+    this.scanResultMessage = '';
+    this.scanningDelivery = null;
+    this.cdr.detectChanges();
   }
 
   logout() { this.authService.logout(); }

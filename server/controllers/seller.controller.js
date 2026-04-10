@@ -223,13 +223,15 @@ exports.getSellerProfile = async (req, res) => {
 exports.updateSellerProfile = async (req, res) => {
   try {
     const { sellerId } = req.params;
-    const { shopName, shopDescription, phone, businessAddress } = req.body;
+    const { shopName, shopDescription, phone, businessAddress, latitude, longitude } = req.body;
 
     const seller = await sellerService.updateSellerProfile(sellerId, {
       shopName,
       shopDescription,
       phone,
       businessAddress,
+      latitude,
+      longitude,
     });
 
     if (!seller) {

@@ -28,7 +28,13 @@ export class OrderService {
     return this.http.get(`${this.apiUrl}/orders/seller${params}`);
   }
 
-  updateOrderStatus(orderId: string, status: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/orders/${orderId}/status`, { status });
+  updateOrderStatus(orderId: string, status: string, trackingNumber?: string): Observable<any> {
+    const body: any = { status };
+    if (trackingNumber) body.trackingNumber = trackingNumber;
+    return this.http.put(`${this.apiUrl}/orders/${orderId}/status`, body);
+  }
+
+  getOrderTracking(orderId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/orders/${orderId}/tracking`);
   }
 }

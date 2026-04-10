@@ -16,7 +16,7 @@ const Delivery = sequelize.define(
     },
     driverId: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
       field: "driver_id",
     },
     hubId: {
@@ -24,15 +24,33 @@ const Delivery = sequelize.define(
       allowNull: false,
       field: "hub_id",
     },
+    destinationHubId: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      field: "destination_hub_id",
+    },
     trackingNumber: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true,
       field: "tracking_number",
     },
     status: {
-      type: DataTypes.ENUM("assigned", "picked_up", "in_transit", "delivered", "failed"),
-      defaultValue: "assigned",
+      type: DataTypes.STRING,
+      defaultValue: "pending_drop_off",
+      validate: {
+        isIn: [["pending_drop_off", "received_at_hub", "in_transit", "at_destination_hub", "out_for_delivery", "delivered", "failed"]],
+      },
+    },
+    qrCode: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      field: "qr_code",
+    },
+    qrSecret: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "qr_secret",
     },
     // Driver's live location during delivery
     currentLatitude: {

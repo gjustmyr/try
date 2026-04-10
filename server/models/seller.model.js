@@ -148,6 +148,14 @@ const Seller = sequelize.define(
       defaultValue: false,
       field: "is_verified",
     },
+    latitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+    },
+    longitude: {
+      type: DataTypes.DECIMAL(10, 7),
+      allowNull: true,
+    },
   },
   {
     tableName: "sellers",

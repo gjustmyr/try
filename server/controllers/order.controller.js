@@ -200,6 +200,28 @@ exports.getSellerOrders = async (req, res) => {
   }
 };
 
+// Get order tracking info (from Order model)
+exports.getOrderTracking = async (req, res) => {
+  try {
+    const order = await Order.findOne({
+      where: { id: req.params.orderId, userId: req.user.id },
+      include: [
+        { model: OrderItem, as: "items", include: [{ model: Product, as: "product", attributes: ["id", "name", "images"] }, { model: Seller, as: "seller", attributes: ["id", "shopName", "businessAddress", "latitude", "longitude"] }] },
+        { model: Address, as: "address" },
+      ],
+    });
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    res.json({ success: true, data: order });
+  } catch (error) {
+    console.error("Get order tracking error:", error);
+    res.status(500).json({ success: false, message: "Failed to get order tracking info" });
+  }
+};
+
 // Update order status (seller)
 exports.updateOrderStatus = async (req, res) => {
   try {
@@ -209,11 +231,16 @@ exports.updateOrderStatus = async (req, res) => {
     }
 
     const { orderId } = req.params;
-    const { status } = req.body;
+    const { status, trackingNumber } = req.body;
 
-    const validStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+    const validStatuses = ["pending", "confirmed", "processing", "shipped", "out_for_delivery", "delivered", "cancelled"];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: "Invalid status" });
+    }
+
+    // Sellers can only set up to processing — shipping is handled by hub system
+    if (status === "shipped" || status === "out_for_delivery") {
+      return res.status(400).json({ success: false, message: "Shipping is handled through the hub system. Drop off your parcel at a hub." });
     }
 
     // Verify this order has items from this seller
@@ -267,10 +294,15 @@ exports.updateOrderStatus = async (req, res) => {
         estimatedDelivery = null;
       }
 
-      await order.update({ status, estimatedDelivery }, { transaction: t });
+      const updateData = { status, estimatedDelivery };
+      if (status === 'shipped' && trackingNumber) {
+        updateData.trackingNumber = trackingNumber;
+      }
+
+      await order.update(updateData, { transaction: t });
       await t.commit();
 
-      res.json({ success: true, message: "Order status updated", data: { id: order.id, status: order.status, estimatedDelivery: order.estimatedDelivery } });
+      res.json({ success: true, message: "Order status updated", data: { id: order.id, status: order.status, estimatedDelivery: order.estimatedDelivery, trackingNumber: order.trackingNumber } });
     } catch (err) {
       await t.rollback();
       throw err;

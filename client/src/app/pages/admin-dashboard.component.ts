@@ -1,9 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { AdminService } from '../services/admin.service';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -406,32 +407,37 @@ import { AdminService } from '../services/admin.service';
 
     <!-- ============ HUB MODAL ============ -->
     <div class="modal-overlay" *ngIf="showHubModal">
-      <div class="modal-box form-modal">
+      <div class="modal-box form-modal hub-form-modal">
         <h3>{{ editingHubId ? 'Edit Hub' : 'Add Delivery Hub' }}</h3>
         <div class="form-grid">
           <div class="form-group full">
             <label>Hub Name</label><input [(ngModel)]="hubForm.name" placeholder="Main Hub" />
           </div>
           <div class="form-group full">
-            <label>Address</label
-            ><input [(ngModel)]="hubForm.address" placeholder="Street address" />
+            <label>Address</label>
+            <input [(ngModel)]="hubForm.address" placeholder="Street address" />
           </div>
           <div class="form-group"><label>City</label><input [(ngModel)]="hubForm.city" /></div>
           <div class="form-group">
             <label>Province</label><input [(ngModel)]="hubForm.province" />
           </div>
           <div class="form-group">
-            <label>Latitude</label><input type="number" step="any" [(ngModel)]="hubForm.latitude" />
+            <label>Latitude</label><input type="number" step="any" [(ngModel)]="hubForm.latitude" (change)="updateHubMapFromInput()" />
           </div>
           <div class="form-group">
-            <label>Longitude</label
-            ><input type="number" step="any" [(ngModel)]="hubForm.longitude" />
+            <label>Longitude</label>
+            <input type="number" step="any" [(ngModel)]="hubForm.longitude" (change)="updateHubMapFromInput()" />
           </div>
           <div class="form-group"><label>Phone</label><input [(ngModel)]="hubForm.phone" /></div>
+          <div class="form-group full">
+            <label><i class="pi pi-map-marker" style="color:#ff6b35"></i> Pin Location on Map</label>
+            <p class="map-hint">Click on the map to set the hub location. The pin and coordinates will update automatically.</p>
+            <div id="hubLocationMap" class="hub-map"></div>
+          </div>
         </div>
         <p class="error-msg" *ngIf="hubError">{{ hubError }}</p>
         <div class="modal-actions">
-          <button class="modal-btn secondary" (click)="showHubModal = false">Cancel</button>
+          <button class="modal-btn secondary" (click)="closeHubModal()">Cancel</button>
           <button class="modal-btn primary" (click)="saveHub()" [disabled]="savingHub">
             {{ editingHubId ? 'Update' : 'Create' }}
           </button>
@@ -995,6 +1001,24 @@ import { AdminService } from '../services/admin.service';
         cursor: not-allowed;
       }
 
+      /* Hub Form Modal - wider for map */
+      .hub-form-modal {
+        max-width: 680px;
+      }
+      .hub-map {
+        width: 100%;
+        height: 300px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        margin-top: 6px;
+        z-index: 0;
+      }
+      .map-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        margin: 2px 0 0;
+      }
+
       @media (max-width: 768px) {
         .stat-grid {
           grid-template-columns: 1fr 1fr;
@@ -1009,7 +1033,7 @@ import { AdminService } from '../services/admin.service';
     `,
   ],
 })
-export class AdminDashboardComponent implements OnInit {
+export class AdminDashboardComponent implements OnInit, OnDestroy {
   activeTab = 'dashboard';
 
   // Dashboard
@@ -1043,6 +1067,8 @@ export class AdminDashboardComponent implements OnInit {
   hubForm: any = {};
   hubError = '';
   savingHub = false;
+  private hubMap: any = null;
+  private hubMarker: any = null;
 
   // Drivers
   drivers: any[] = [];
@@ -1075,6 +1101,10 @@ export class AdminDashboardComponent implements OnInit {
       return;
     }
     this.loadDashboard();
+  }
+
+  ngOnDestroy() {
+    this.destroyHubMap();
   }
 
   loadDashboard() {
@@ -1172,6 +1202,8 @@ export class AdminDashboardComponent implements OnInit {
       phone: '',
     };
     this.hubError = '';
+    this.destroyHubMap();
+    setTimeout(() => this.initHubMap(), 200);
   }
 
   editHub(hub: any) {
@@ -1179,6 +1211,77 @@ export class AdminDashboardComponent implements OnInit {
     this.hubForm = { ...hub };
     this.hubError = '';
     this.showHubModal = true;
+    this.destroyHubMap();
+    setTimeout(() => this.initHubMap(), 200);
+  }
+
+  closeHubModal() {
+    this.showHubModal = false;
+    this.destroyHubMap();
+  }
+
+  initHubMap() {
+    const mapEl = document.getElementById('hubLocationMap');
+    if (!mapEl || this.hubMap) return;
+
+    const defaultLat = parseFloat(this.hubForm.latitude) || 14.5995;
+    const defaultLng = parseFloat(this.hubForm.longitude) || 120.9842;
+    const hasCoords = !!(this.hubForm.latitude && this.hubForm.longitude);
+
+    this.hubMap = L.map('hubLocationMap', { zoomControl: true }).setView([defaultLat, defaultLng], hasCoords ? 15 : 6);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.hubMap);
+
+    // Place marker if coords exist
+    if (hasCoords) {
+      this.placeHubMarker(defaultLat, defaultLng);
+    }
+
+    // Click to place pin
+    this.hubMap.on('click', (e: any) => {
+      const { lat, lng } = e.latlng;
+      this.hubForm.latitude = parseFloat(lat.toFixed(6));
+      this.hubForm.longitude = parseFloat(lng.toFixed(6));
+      this.placeHubMarker(lat, lng);
+      this.cdr.detectChanges();
+    });
+
+    // Fix map rendering after modal animation
+    setTimeout(() => {
+      if (this.hubMap) this.hubMap.invalidateSize();
+    }, 300);
+  }
+
+  placeHubMarker(lat: number, lng: number) {
+    const icon = L.divIcon({
+      html: '<div style="background:#ff6b35;width:18px;height:18px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:white;border-radius:50%"></div></div>',
+      className: '',
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
+    });
+    if (this.hubMarker) {
+      this.hubMarker.setLatLng([lat, lng]);
+    } else {
+      this.hubMarker = L.marker([lat, lng], { icon }).addTo(this.hubMap);
+    }
+  }
+
+  updateHubMapFromInput() {
+    const lat = parseFloat(this.hubForm.latitude);
+    const lng = parseFloat(this.hubForm.longitude);
+    if (!isNaN(lat) && !isNaN(lng) && this.hubMap) {
+      this.hubMap.setView([lat, lng], 15);
+      this.placeHubMarker(lat, lng);
+    }
+  }
+
+  destroyHubMap() {
+    if (this.hubMap) {
+      this.hubMap.remove();
+      this.hubMap = null;
+      this.hubMarker = null;
+    }
   }
 
   saveHub() {

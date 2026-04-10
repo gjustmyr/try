@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { OrderService } from '../services/order.service';
+import { HubService } from '../services/hub.service';
 
 @Component({
   selector: 'app-seller-orders',
@@ -65,7 +66,7 @@ import { OrderService } from '../services/order.service';
             <div class="order-stats">
               <span class="stat-pill pending">{{ getCount('pending') }} Pending</span>
               <span class="stat-pill processing">{{ getCount('processing') }} Processing</span>
-              <span class="stat-pill shipped">{{ getCount('shipped') }} Shipped</span>
+              <span class="stat-pill shipped">{{ getCount('pending_drop_off') + getCount('shipped') }} Shipping</span>
             </div>
           </div>
         </header>
@@ -102,6 +103,7 @@ import { OrderService } from '../services/order.service';
                   <th>Total</th>
                   <th>Status</th>
                   <th>Date</th>
+                  <th>Tracking #</th>
                   <th>ETA</th>
                   <th>Actions</th>
                 </tr>
@@ -121,6 +123,10 @@ import { OrderService } from '../services/order.service';
                     <span class="status-chip" [attr.data-status]="order.status">{{ order.status | titlecase }}</span>
                   </td>
                   <td class="order-date-cell">{{ order.createdAt | date:'MMM d, yyyy' }}</td>
+                  <td class="tracking-cell">
+                    <span class="tracking-number" *ngIf="order.trackingNumber">{{ order.trackingNumber }}</span>
+                    <span class="no-tracking" *ngIf="!order.trackingNumber">—</span>
+                  </td>
                   <td class="eta-cell">
                     <span class="eta-badge" *ngIf="order.estimatedDelivery && order.status !== 'delivered' && order.status !== 'cancelled'">
                       <i class="pi pi-truck"></i> {{ order.estimatedDelivery | date:'MMM d' }}
@@ -130,14 +136,20 @@ import { OrderService } from '../services/order.service';
                     <span class="eta-badge na" *ngIf="order.status === 'cancelled'">—</span>
                   </td>
                   <td class="actions-cell" (click)="$event.stopPropagation()">
-                    <select class="status-select" [ngModel]="order.status" (ngModelChange)="changeStatus(order, $event)">
+                    <button class="hub-dropoff-btn" *ngIf="order.status === 'processing'" (click)="openHubModal(order)">
+                      <i class="pi pi-building"></i> Drop off at Hub
+                    </button>
+                    <select class="status-select" [ngModel]="order.status" (ngModelChange)="changeStatus(order, $event)"
+                      *ngIf="order.status !== 'pending_drop_off' && order.status !== 'shipped' && order.status !== 'out_for_delivery' && order.status !== 'delivered' && order.status !== 'processing'">
                       <option value="pending">Pending</option>
                       <option value="confirmed">Confirmed</option>
                       <option value="processing">Processing</option>
-                      <option value="shipped">Shipped</option>
-                      <option value="delivered">Delivered</option>
                       <option value="cancelled" [disabled]="order.status === 'shipped' || order.status === 'delivered'">Cancelled</option>
                     </select>
+                    <span class="hub-status-label" *ngIf="order.status === 'pending_drop_off'"><i class="pi pi-clock"></i> Awaiting Hub</span>
+                    <span class="hub-status-label shipped" *ngIf="order.status === 'shipped'"><i class="pi pi-truck"></i> In Hub System</span>
+                    <span class="hub-status-label transit" *ngIf="order.status === 'out_for_delivery'"><i class="pi pi-send"></i> Out for Delivery</span>
+                    <span class="hub-status-label done" *ngIf="order.status === 'delivered'"><i class="pi pi-check"></i> Delivered</span>
                   </td>
                 </tr>
 
@@ -154,6 +166,11 @@ import { OrderService } from '../services/order.service';
               </div>
 
               <!-- ETA Bar -->
+              <div class="detail-tracking-bar" *ngIf="expandedOrder.trackingNumber">
+                <i class="pi pi-barcode"></i>
+                <span>Tracking Number: <strong>{{ expandedOrder.trackingNumber }}</strong></span>
+              </div>
+
               <div class="detail-eta-bar" *ngIf="expandedOrder.estimatedDelivery && expandedOrder.status !== 'delivered' && expandedOrder.status !== 'cancelled'">
                 <i class="pi pi-truck"></i>
                 <span>Estimated Delivery: <strong>{{ expandedOrder.estimatedDelivery | date:'MMMM d, yyyy' }}</strong></span>
@@ -224,6 +241,32 @@ import { OrderService } from '../services/order.service';
           <button class="modal-btn" [class.danger]="pendingNewStatus === 'cancelled'" [class.primary]="pendingNewStatus !== 'cancelled'" (click)="confirmStatusChange()">
             {{ pendingNewStatus === 'cancelled' ? 'Yes, Cancel Order' : 'Confirm' }}
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hub Selection Modal -->
+    <div class="modal-overlay" *ngIf="showHubModal">
+      <div class="modal-box hub-modal">
+        <div class="modal-icon" data-type="info"><i class="pi pi-building"></i></div>
+        <h3>Select Drop-off Hub</h3>
+        <p>Choose the nearest hub to drop off the parcel for order <strong>{{ hubModalOrder?.orderNumber }}</strong></p>
+        <div class="hub-list" *ngIf="availableHubs.length > 0">
+          <div class="hub-option" *ngFor="let hub of availableHubs" [class.selected]="selectedHubId === hub.id" (click)="selectedHubId = hub.id">
+            <div class="hub-radio"><div class="radio-dot" *ngIf="selectedHubId === hub.id"></div></div>
+            <div class="hub-info">
+              <span class="hub-name">{{ hub.name }}</span>
+              <span class="hub-addr">{{ hub.address }}, {{ hub.city }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="availableHubs.length === 0 && !hubsLoading">
+          <p>No hubs available. Contact admin.</p>
+        </div>
+        <div class="loading-state" *ngIf="hubsLoading"><i class="pi pi-spin pi-spinner"></i> Loading hubs...</div>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" (click)="closeHubModal()">Cancel</button>
+          <button class="modal-btn primary" (click)="confirmDropOff()" [disabled]="!selectedHubId || droppingOff">{{ droppingOff ? 'Processing...' : 'Confirm Drop-off' }}</button>
         </div>
       </div>
     </div>
@@ -322,6 +365,8 @@ import { OrderService } from '../services/order.service';
     .status-chip[data-status="confirmed"] { background: #dbeafe; color: #1e40af; }
     .status-chip[data-status="processing"] { background: #e0e7ff; color: #3730a3; }
     .status-chip[data-status="shipped"] { background: #fce7f3; color: #9d174d; }
+    .status-chip[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
+    .status-chip[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
     .status-chip[data-status="delivered"] { background: #dcfce7; color: #166534; }
     .status-chip[data-status="cancelled"] { background: #fee2e2; color: #991b1b; }
 
@@ -417,6 +462,8 @@ import { OrderService } from '../services/order.service';
     .status-chip-inline[data-status="confirmed"] { background: #dbeafe; color: #1e40af; }
     .status-chip-inline[data-status="processing"] { background: #e0e7ff; color: #3730a3; }
     .status-chip-inline[data-status="shipped"] { background: #fce7f3; color: #9d174d; }
+    .status-chip-inline[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
+    .status-chip-inline[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
     .status-chip-inline[data-status="delivered"] { background: #dcfce7; color: #166534; }
     .status-chip-inline[data-status="cancelled"] { background: #fee2e2; color: #991b1b; }
     .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: center; }
@@ -437,6 +484,62 @@ import { OrderService } from '../services/order.service';
       .order-stats { display: none; }
       .detail-grid { grid-template-columns: 1fr; }
     }
+
+    /* Hub drop-off button */
+    .hub-dropoff-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 8px; border: none;
+      background: #ff6b35; color: white; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s; white-space: nowrap;
+    }
+    .hub-dropoff-btn:hover { background: #e55a28; }
+    .hub-dropoff-btn i { font-size: 13px; }
+
+    .hub-status-label {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 20px;
+      background: #fff7ed; color: #c2410c; white-space: nowrap;
+    }
+    .hub-status-label.shipped { background: #fce7f3; color: #9d174d; }
+    .hub-status-label.transit { background: #f0fdf4; color: #15803d; }
+    .hub-status-label.done { background: #dcfce7; color: #166534; }
+    .hub-status-label i { font-size: 12px; }
+
+    /* Hub Selection Modal */
+    .hub-modal { max-width: 520px; text-align: left; }
+    .hub-modal h3, .hub-modal > p { text-align: center; }
+    .hub-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; max-height: 300px; overflow-y: auto; }
+    .hub-option {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      border: 2px solid #e5e7eb; border-radius: 10px; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .hub-option:hover { border-color: #ff6b35; background: #fff7ed; }
+    .hub-option.selected { border-color: #ff6b35; background: #fff7ed; }
+    .hub-radio {
+      width: 20px; height: 20px; border-radius: 50%; border: 2px solid #d1d5db;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .hub-option.selected .hub-radio { border-color: #ff6b35; }
+    .radio-dot { width: 10px; height: 10px; border-radius: 50%; background: #ff6b35; }
+    .hub-info { display: flex; flex-direction: column; }
+    .hub-name { font-size: 14px; font-weight: 600; color: #1f2937; }
+    .hub-addr { font-size: 12px; color: #6b7280; }
+
+    .tracking-cell { font-size: 13px; }
+    .tracking-number {
+      font-family: monospace; font-size: 12px; font-weight: 600; color: #7c3aed;
+      background: #f5f3ff; padding: 3px 8px; border-radius: 4px;
+    }
+    .no-tracking { color: #d1d5db; }
+
+    .detail-tracking-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 10px;
+      padding: 12px 16px; margin-bottom: 12px; font-size: 14px; color: #5b21b6;
+    }
+    .detail-tracking-bar i { font-size: 18px; color: #7c3aed; }
+    .detail-tracking-bar strong { color: #4c1d95; font-family: monospace; letter-spacing: 0.5px; }
   `],
 })
 export class SellerOrdersComponent implements OnInit {
@@ -457,15 +560,26 @@ export class SellerOrdersComponent implements OnInit {
     { key: 'pending', label: 'Pending' },
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'processing', label: 'Processing' },
+    { key: 'pending_drop_off', label: 'Awaiting Hub' },
     { key: 'shipped', label: 'Shipped' },
+    { key: 'out_for_delivery', label: 'Out for Delivery' },
     { key: 'delivered', label: 'Delivered' },
     { key: 'cancelled', label: 'Cancelled' },
   ];
+
+  // Hub modal state
+  showHubModal = false;
+  hubModalOrder: any = null;
+  availableHubs: any[] = [];
+  selectedHubId = '';
+  hubsLoading = false;
+  droppingOff = false;
 
   constructor(
     private router: Router,
     private authService: AuthService,
     private orderService: OrderService,
+    private hubService: HubService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -572,18 +686,74 @@ export class SellerOrdersComponent implements OnInit {
 
     this.orderService.updateOrderStatus(order.id, newStatus).subscribe({
       next: (res: any) => {
-        if (res.success && res.data?.estimatedDelivery !== undefined) {
-          order.estimatedDelivery = res.data.estimatedDelivery;
-          if (this.expandedOrder?.id === order.id) {
-            this.expandedOrder.estimatedDelivery = res.data.estimatedDelivery;
+        if (res.success) {
+          if (res.data?.estimatedDelivery !== undefined) {
+            order.estimatedDelivery = res.data.estimatedDelivery;
+            if (this.expandedOrder?.id === order.id) {
+              this.expandedOrder.estimatedDelivery = res.data.estimatedDelivery;
+            }
           }
-        } else if (!res.success) {
+          if (res.data?.trackingNumber) {
+            order.trackingNumber = res.data.trackingNumber;
+            if (this.expandedOrder?.id === order.id) {
+              this.expandedOrder.trackingNumber = res.data.trackingNumber;
+            }
+          }
+        } else {
           order.status = oldStatus;
         }
         this.cdr.detectChanges();
       },
       error: (err: any) => {
         order.status = oldStatus;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openHubModal(order: any) {
+    this.hubModalOrder = order;
+    this.selectedHubId = '';
+    this.showHubModal = true;
+    this.hubsLoading = true;
+    this.hubService.getAvailableHubs().subscribe({
+      next: (res: any) => {
+        this.hubsLoading = false;
+        if (res.success) this.availableHubs = res.data;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.hubsLoading = false;
+        this.availableHubs = [];
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  closeHubModal() {
+    this.showHubModal = false;
+    this.hubModalOrder = null;
+    this.selectedHubId = '';
+    this.availableHubs = [];
+    this.droppingOff = false;
+  }
+
+  confirmDropOff() {
+    if (!this.selectedHubId || !this.hubModalOrder) return;
+    this.droppingOff = true;
+    this.hubService.sellerDropOff(this.hubModalOrder.id, this.selectedHubId).subscribe({
+      next: (res: any) => {
+        this.droppingOff = false;
+        if (res.success) {
+          this.hubModalOrder.status = 'pending_drop_off';
+          this.closeHubModal();
+          this.loadOrders();
+        }
+        this.cdr.detectChanges();
+      },
+      error: (err: any) => {
+        this.droppingOff = false;
+        alert(err.error?.message || 'Drop-off failed');
         this.cdr.detectChanges();
       },
     });

@@ -28,6 +28,7 @@ const orderRoutes = require("./routes/order.routes");
 const reviewRoutes = require("./routes/review.routes");
 const driverRoutes = require("./routes/driver.routes");
 const deliveryRoutes = require("./routes/delivery.routes");
+const hubRoutes = require("./routes/hub.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -54,6 +55,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/driver", driverRoutes);
 app.use("/api/deliveries", deliveryRoutes);
+app.use("/api/hub", hubRoutes);
 
 // Unified search endpoint
 const productService = require("./services/product.service");
@@ -108,6 +110,15 @@ const startServer = async () => {
 	try {
 		// Test database connection
 		await testConnection();
+
+		// Migrate ENUM columns to VARCHAR before sync to support new status values
+		try {
+			await sequelize.query(`ALTER TABLE deliveries ALTER COLUMN status TYPE VARCHAR(255) USING status::VARCHAR(255);`);
+			await sequelize.query(`ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(255) USING status::VARCHAR(255);`);
+			console.log("✓ Status columns migrated to VARCHAR");
+		} catch (e) {
+			// Columns may already be VARCHAR - ignore
+		}
 
 		// Sync database models
 		await sequelize.sync({ alter: true });

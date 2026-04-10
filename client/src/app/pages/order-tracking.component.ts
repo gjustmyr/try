@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { DeliveryService } from '../services/delivery.service';
+import { OrderService } from '../services/order.service';
 import * as L from 'leaflet';
 
 @Component({
@@ -16,6 +17,7 @@ import * as L from 'leaflet';
           <div>
             <h1>Order Tracking</h1>
             <p class="sub" *ngIf="tracking">{{ tracking.trackingNumber }}</p>
+            <p class="sub" *ngIf="!tracking && orderData?.trackingNumber">{{ orderData.trackingNumber }}</p>
           </div>
         </div>
       </header>
@@ -23,6 +25,7 @@ import * as L from 'leaflet';
       <div class="loading" *ngIf="loading"><i class="pi pi-spin pi-spinner"></i> Loading tracking info...</div>
       <div class="error-box" *ngIf="error">{{ error }}</div>
 
+      <!-- Delivery-based tracking (driver/hub) -->
       <div class="tracking-body" *ngIf="tracking && !loading">
         <div class="map-container">
           <div id="trackingMap" class="map"></div>
@@ -59,9 +62,16 @@ import * as L from 'leaflet';
 
           <!-- Hub Info -->
           <div class="detail-section" *ngIf="tracking.hub">
-            <h3>Pickup Hub</h3>
+            <h3>Origin Hub</h3>
             <div class="detail-row"><span class="dl">Hub</span><span class="dv">{{ tracking.hub.name }}</span></div>
             <div class="detail-row"><span class="dl">Address</span><span class="dv">{{ tracking.hub.address }}, {{ tracking.hub.city }}</span></div>
+          </div>
+
+          <!-- Destination Hub Info -->
+          <div class="detail-section" *ngIf="tracking.destinationHub">
+            <h3>Destination Hub</h3>
+            <div class="detail-row"><span class="dl">Hub</span><span class="dv">{{ tracking.destinationHub.name }}</span></div>
+            <div class="detail-row"><span class="dl">Address</span><span class="dv">{{ tracking.destinationHub.address }}, {{ tracking.destinationHub.city }}</span></div>
           </div>
 
           <!-- Order Info -->
@@ -69,6 +79,99 @@ import * as L from 'leaflet';
             <h3>Order</h3>
             <div class="detail-row"><span class="dl">Order #</span><span class="dv mono">{{ tracking.order.orderNumber }}</span></div>
             <div class="detail-row"><span class="dl">Total</span><span class="dv">₱{{ tracking.order.totalAmount | number:'1.2-2' }}</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order-based tracking (no delivery record) -->
+      <div class="order-tracking-body" *ngIf="!tracking && orderData && !loading && !error">
+        <!-- Shipping Map -->
+        <div class="shipping-map-card" *ngIf="hasMapData()">
+          <div class="map-header">
+            <h3><i class="pi pi-map"></i> Shipping Route</h3>
+            <div class="map-legend">
+              <span class="legend-item"><span class="legend-dot origin"></span> {{ getSellerName() }}</span>
+              <span class="legend-item"><span class="legend-dot dest"></span> Your Address</span>
+            </div>
+          </div>
+          <div id="orderTrackingMap" class="order-map"></div>
+          <div class="map-footer" *ngIf="shippingDistance">
+            <i class="pi pi-arrows-h"></i>
+            <span>Estimated distance: <strong>{{ shippingDistance | number:'1.1-1' }} km</strong></span>
+          </div>
+        </div>
+
+        <div class="order-tracking-card">
+          <!-- Order Status Timeline -->
+          <div class="timeline">
+            <div class="tl-item" *ngFor="let step of orderTimeline" [class.active]="step.active" [class.done]="step.done">
+              <div class="tl-dot"><i [class]="step.icon"></i></div>
+              <div class="tl-content">
+                <span class="tl-label">{{ step.label }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ETA Prediction Banner -->
+          <div class="eta-prediction" *ngIf="orderData.status !== 'delivered' && orderData.status !== 'cancelled'">
+            <div class="eta-icon-box" [attr.data-status]="orderData.status">
+              <i [class]="getStatusIcon(orderData.status)"></i>
+            </div>
+            <div class="eta-text">
+              <span class="eta-message">{{ getStatusMessage(orderData.status) }}</span>
+              <span class="eta-date" *ngIf="orderData.estimatedDelivery">
+                Estimated arrival: <strong>{{ orderData.estimatedDelivery | date:'EEEE, MMMM d, yyyy' }}</strong>
+                <span class="eta-countdown">{{ getDaysUntil(orderData.estimatedDelivery) }}</span>
+              </span>
+            </div>
+          </div>
+          <div class="eta-prediction delivered" *ngIf="orderData.status === 'delivered'">
+            <div class="eta-icon-box" data-status="delivered"><i class="pi pi-check-circle"></i></div>
+            <div class="eta-text">
+              <span class="eta-message">Your order has been delivered!</span>
+            </div>
+          </div>
+
+          <!-- Tracking Info -->
+          <div class="detail-section" *ngIf="orderData.trackingNumber">
+            <h3>Tracking Information</h3>
+            <div class="tracking-number-display">
+              <i class="pi pi-barcode"></i>
+              <span>{{ orderData.trackingNumber }}</span>
+            </div>
+          </div>
+
+          <!-- Order Details -->
+          <div class="detail-section">
+            <h3>Order Details</h3>
+            <div class="detail-row"><span class="dl">Order #</span><span class="dv mono">{{ orderData.orderNumber }}</span></div>
+            <div class="detail-row"><span class="dl">Status</span><span class="dv"><span class="status-chip" [attr.data-status]="orderData.status">{{ orderData.status | titlecase }}</span></span></div>
+            <div class="detail-row"><span class="dl">Total</span><span class="dv">₱{{ orderData.total | number:'1.2-2' }}</span></div>
+          </div>
+
+          <!-- Delivery Address -->
+          <div class="detail-section" *ngIf="orderData.address">
+            <h3>Delivery Address</h3>
+            <div class="detail-row"><span class="dl">Name</span><span class="dv">{{ orderData.address.fullName }}</span></div>
+            <div class="detail-row"><span class="dl">Phone</span><span class="dv">{{ orderData.address.phone }}</span></div>
+            <div class="detail-row"><span class="dl">Address</span><span class="dv">{{ orderData.address.streetAddress }}, {{ orderData.address.barangay }}, {{ orderData.address.city }}, {{ orderData.address.province }}</span></div>
+          </div>
+
+          <!-- Items -->
+          <div class="detail-section">
+            <h3>Items</h3>
+            <div class="tracking-item" *ngFor="let item of orderData.items">
+              <div class="ti-img">
+                <img *ngIf="item.productImage?.url" [src]="item.productImage.url" />
+                <div *ngIf="!item.productImage?.url" class="ti-placeholder"><i class="pi pi-image"></i></div>
+              </div>
+              <div class="ti-info">
+                <span class="ti-name">{{ item.productName }}</span>
+                <span class="ti-seller" *ngIf="item.seller">{{ item.seller.shopName }}</span>
+              </div>
+              <div class="ti-qty">x{{ item.quantity }}</div>
+              <div class="ti-price">₱{{ (item.price * item.quantity) | number:'1.2-2' }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -130,15 +233,126 @@ import * as L from 'leaflet';
       .map { min-height: 350px; }
       .info-panel { max-height: none; border-left: none; border-top: 1px solid #e5e7eb; }
     }
+
+    /* Order-based tracking */
+    .order-tracking-body { max-width: 700px; margin: 24px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 20px; }
+    .order-tracking-card { background: white; border-radius: 16px; border: 1px solid #e5e7eb; padding: 32px; }
+
+    /* Shipping Map */
+    .shipping-map-card {
+      background: white; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden;
+    }
+    .map-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 16px 20px; border-bottom: 1px solid #f3f4f6;
+    }
+    .map-header h3 {
+      font-size: 15px; font-weight: 700; color: #1f2937; margin: 0;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .map-header h3 i { color: #ff6b35; }
+    .map-legend { display: flex; gap: 16px; }
+    .legend-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: #6b7280; font-weight: 500;
+    }
+    .legend-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
+    }
+    .legend-dot.origin { background: #ff6b35; }
+    .legend-dot.dest { background: #ef4444; }
+    .order-map { width: 100%; height: 350px; }
+    .map-footer {
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 20px; background: #f9fafb; border-top: 1px solid #f3f4f6;
+      font-size: 13px; color: #6b7280;
+    }
+    .map-footer i { color: #ff6b35; }
+    .map-footer strong { color: #1f2937; }
+
+    .tracking-number-display {
+      display: flex; align-items: center; gap: 12px;
+      background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px;
+      padding: 16px 20px; font-size: 20px; font-weight: 700;
+      color: #5b21b6; font-family: monospace; letter-spacing: 1px;
+    }
+    .tracking-number-display i { font-size: 24px; color: #7c3aed; }
+
+    .tracking-item {
+      display: flex; align-items: center; gap: 12px; padding: 10px;
+      background: #f9fafb; border-radius: 8px; margin-bottom: 8px;
+    }
+    .ti-img { width: 44px; height: 44px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
+    .ti-img img { width: 100%; height: 100%; object-fit: cover; }
+    .ti-placeholder {
+      width: 100%; height: 100%; background: #e5e7eb;
+      display: flex; align-items: center; justify-content: center; color: #9ca3af;
+    }
+    .ti-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .ti-name { font-size: 14px; font-weight: 500; color: #1f2937; }
+    .ti-seller { font-size: 12px; color: #6b7280; }
+    .ti-qty { font-size: 13px; color: #6b7280; width: 40px; text-align: center; }
+    .ti-price { font-size: 14px; font-weight: 600; color: #ff6b35; width: 90px; text-align: right; }
+
+    .status-chip[data-status="pending"] { background: #fef3c7; color: #92400e; }
+    .status-chip[data-status="confirmed"] { background: #dbeafe; color: #1e40af; }
+    .status-chip[data-status="processing"] { background: #e0e7ff; color: #3730a3; }
+    .status-chip[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
+    .status-chip[data-status="shipped"] { background: #fce7f3; color: #9d174d; }
+    .status-chip[data-status="received_at_hub"] { background: #ecfdf5; color: #065f46; }
+    .status-chip[data-status="in_transit"] { background: #e0e7ff; color: #3730a3; }
+    .status-chip[data-status="at_destination_hub"] { background: #fdf4ff; color: #86198f; }
+    .status-chip[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
+    .status-chip[data-status="delivered"] { background: #dcfce7; color: #166534; }
+    .status-chip[data-status="cancelled"] { background: #fee2e2; color: #991b1b; }
+    .status-chip[data-status="failed"] { background: #fee2e2; color: #991b1b; }
+
+    /* ETA Prediction Banner */
+    .eta-prediction {
+      display: flex; align-items: center; gap: 16px;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 1px solid #fde68a; border-radius: 14px;
+      padding: 20px 24px; margin-bottom: 24px;
+    }
+    .eta-prediction.delivered {
+      background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%);
+      border-color: #a7f3d0;
+    }
+    .eta-icon-box {
+      width: 48px; height: 48px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .eta-icon-box[data-status="pending"] { background: #fef3c7; color: #d97706; }
+    .eta-icon-box[data-status="confirmed"] { background: #dbeafe; color: #2563eb; }
+    .eta-icon-box[data-status="processing"] { background: #e0e7ff; color: #4f46e5; }
+    .eta-icon-box[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
+    .eta-icon-box[data-status="shipped"] { background: #fce7f3; color: #db2777; }
+    .eta-icon-box[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
+    .eta-icon-box[data-status="delivered"] { background: #dcfce7; color: #16a34a; }
+    .eta-text { display: flex; flex-direction: column; gap: 4px; }
+    .eta-message { font-size: 15px; font-weight: 600; color: #1f2937; }
+    .eta-date { font-size: 14px; color: #4b5563; }
+    .eta-date strong { color: #1f2937; }
+    .eta-countdown {
+      display: inline-block; margin-left: 8px;
+      font-size: 13px; font-weight: 600; color: #ff6b35;
+      background: #fff7ed; padding: 2px 10px; border-radius: 20px;
+    }
   `],
 })
 export class OrderTrackingComponent implements OnInit, OnDestroy {
   tracking: any = null;
+  orderData: any = null;
+  orderTimeline: any[] = [];
   loading = true;
   error = '';
   timeline: any[] = [];
+  shippingDistance: number = 0;
 
   private map: any = null;
+  private orderMap: any = null;
   private driverMarker: any = null;
   private destMarker: any = null;
   private routeLine: any = null;
@@ -148,6 +362,7 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
     private route: ActivatedRoute,
     private router: Router,
     private deliveryService: DeliveryService,
+    private orderService: OrderService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -166,6 +381,7 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     if (this.refreshInterval) clearInterval(this.refreshInterval);
     if (this.map) this.map.remove();
+    if (this.orderMap) this.orderMap.remove();
   }
 
   loadTracking(orderId: string, silent = false) {
@@ -178,28 +394,77 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
           this.buildTimeline();
           setTimeout(() => this.initOrUpdateMap(), 100);
         } else {
-          this.error = res.message || 'Tracking not available';
+          this.loadOrderTracking(orderId);
         }
         this.cdr.detectChanges();
       },
-      error: (err: any) => {
+      error: () => {
+        // No delivery record, try order-based tracking
+        this.loadOrderTracking(orderId);
+      },
+    });
+  }
+
+  loadOrderTracking(orderId: string) {
+    this.orderService.getOrderTracking(orderId).subscribe({
+      next: (res: any) => {
         this.loading = false;
-        this.error = err.error?.message || 'No tracking information found for this order';
+        if (res.success) {
+          this.orderData = res.data;
+          this.buildOrderTimeline();
+          this.cdr.detectChanges();
+          setTimeout(() => this.initOrderMap(), 200);
+        } else {
+          this.error = 'Tracking info not found';
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.error = 'Tracking info not found';
         this.cdr.detectChanges();
       },
     });
+  }
+
+  buildOrderTimeline() {
+    if (!this.orderData) return;
+    const status = this.orderData.status;
+    const steps = [
+      { key: 'pending', label: 'Order Placed', icon: 'pi pi-shopping-cart' },
+      { key: 'confirmed', label: 'Confirmed', icon: 'pi pi-check' },
+      { key: 'processing', label: 'Processing', icon: 'pi pi-box' },
+      { key: 'pending_drop_off', label: 'Awaiting Hub Drop-off', icon: 'pi pi-building' },
+      { key: 'shipped', label: 'Received at Hub', icon: 'pi pi-inbox' },
+      { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'pi pi-truck' },
+      { key: 'delivered', label: 'Delivered', icon: 'pi pi-home' },
+    ];
+    const order = ['pending', 'confirmed', 'processing', 'pending_drop_off', 'shipped', 'out_for_delivery', 'delivered'];
+    const currentIdx = order.indexOf(status);
+
+    this.orderTimeline = steps.map((s, i) => ({
+      ...s,
+      done: i < currentIdx,
+      active: i === currentIdx,
+    }));
+
+    if (status === 'cancelled') {
+      this.orderTimeline = [{ key: 'cancelled', label: 'Order Cancelled', icon: 'pi pi-times', done: false, active: true }];
+    }
   }
 
   buildTimeline() {
     if (!this.tracking) return;
     const status = this.tracking.status;
     const steps = [
-      { key: 'assigned', label: 'Order Assigned', icon: 'pi pi-box', time: this.tracking.createdAt },
-      { key: 'picked_up', label: 'Picked Up from Hub', icon: 'pi pi-check', time: this.tracking.pickedUpAt },
-      { key: 'in_transit', label: 'In Transit', icon: 'pi pi-truck', time: null },
+      { key: 'pending_drop_off', label: 'Awaiting Hub Drop-off', icon: 'pi pi-building', time: this.tracking.createdAt },
+      { key: 'received_at_hub', label: 'Received at Origin Hub', icon: 'pi pi-inbox', time: null },
+      { key: 'in_transit', label: 'In Transit (Hub to Hub)', icon: 'pi pi-truck', time: null },
+      { key: 'at_destination_hub', label: 'At Destination Hub', icon: 'pi pi-map-marker', time: null },
+      { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'pi pi-send', time: null },
       { key: 'delivered', label: 'Delivered', icon: 'pi pi-home', time: this.tracking.deliveredAt },
     ];
-    const order = ['assigned', 'picked_up', 'in_transit', 'delivered'];
+    const order = ['pending_drop_off', 'received_at_hub', 'in_transit', 'at_destination_hub', 'out_for_delivery', 'delivered'];
     const currentIdx = order.indexOf(status);
 
     this.timeline = steps.map((s, i) => ({
@@ -283,6 +548,118 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
 
   formatStatus(status: string): string {
     return (status || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  getStatusIcon(status: string): string {
+    const icons: any = {
+      pending: 'pi pi-clock',
+      confirmed: 'pi pi-check',
+      processing: 'pi pi-box',
+      pending_drop_off: 'pi pi-building',
+      shipped: 'pi pi-inbox',
+      out_for_delivery: 'pi pi-truck',
+      delivered: 'pi pi-check-circle',
+    };
+    return icons[status] || 'pi pi-info-circle';
+  }
+
+  getStatusMessage(status: string): string {
+    const messages: any = {
+      pending: 'Your order is pending confirmation from the seller.',
+      confirmed: 'Your order has been confirmed and is being prepared.',
+      processing: 'Your order is being packed and prepared for shipping.',
+      pending_drop_off: 'Your order is ready and awaiting drop-off at the delivery hub.',
+      shipped: 'Your order has been received at the hub and is being processed for delivery.',
+      out_for_delivery: 'Your order is on its way to you! A rider has been assigned.',
+    };
+    return messages[status] || 'Order is being processed.';
+  }
+
+  getDaysUntil(dateStr: string): string {
+    if (!dateStr) return '';
+    const target = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff <= 0) return 'Arriving any time now';
+    if (diff === 1) return 'Arriving tomorrow';
+    return `${diff} days away`;
+  }
+
+  hasMapData(): boolean {
+    if (!this.orderData) return false;
+    const addr = this.orderData.address;
+    if (!addr?.latitude || !addr?.longitude) return false;
+    const seller = this.orderData.items?.[0]?.seller;
+    if (!seller?.latitude || !seller?.longitude) return false;
+    return true;
+  }
+
+  getSellerName(): string {
+    return this.orderData?.items?.[0]?.seller?.shopName || 'Store';
+  }
+
+  initOrderMap() {
+    if (!this.orderData || this.orderMap) return;
+    const addr = this.orderData.address;
+    const seller = this.orderData.items?.[0]?.seller;
+    if (!addr?.latitude || !addr?.longitude || !seller?.latitude || !seller?.longitude) return;
+
+    const destLat = parseFloat(addr.latitude);
+    const destLng = parseFloat(addr.longitude);
+    const originLat = parseFloat(seller.latitude);
+    const originLng = parseFloat(seller.longitude);
+
+    const mapEl = document.getElementById('orderTrackingMap');
+    if (!mapEl) return;
+
+    this.orderMap = L.map('orderTrackingMap');
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(this.orderMap);
+
+    // Origin marker (seller/store)
+    const originIcon = L.divIcon({
+      html: '<div style="background:#ff6b35;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:white;border-radius:50%"></div></div>',
+      className: '',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+
+    // Destination marker (customer)
+    const destIcon = L.divIcon({
+      html: '<div style="background:#ef4444;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:white;border-radius:50%"></div></div>',
+      className: '',
+      iconSize: [22, 22],
+      iconAnchor: [11, 11],
+    });
+
+    L.marker([originLat, originLng], { icon: originIcon })
+      .addTo(this.orderMap)
+      .bindPopup(`<b>${seller.shopName}</b><br>${seller.businessAddress || 'Store Location'}`);
+
+    L.marker([destLat, destLng], { icon: destIcon })
+      .addTo(this.orderMap)
+      .bindPopup(`<b>Your Address</b><br>${addr.streetAddress}, ${addr.barangay}, ${addr.city}`);
+
+    // Route line
+    L.polyline([[originLat, originLng], [destLat, destLng]], {
+      color: '#ff6b35',
+      weight: 3,
+      dashArray: '10, 8',
+      opacity: 0.8,
+    }).addTo(this.orderMap);
+
+    // Fit bounds
+    const bounds = L.latLngBounds([[originLat, originLng], [destLat, destLng]]);
+    this.orderMap.fitBounds(bounds, { padding: [50, 50] });
+
+    // Calculate distance (Haversine)
+    const R = 6371;
+    const dLat = (destLat - originLat) * Math.PI / 180;
+    const dLng = (destLng - originLng) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(originLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    this.shippingDistance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    this.cdr.detectChanges();
   }
 
   goBack() {

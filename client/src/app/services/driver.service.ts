@@ -28,6 +28,10 @@ export class DriverService {
     return this.http.put(`${this.apiUrl}/driver/deliveries/${deliveryId}/status`, { status, notes });
   }
 
+  scanDelivery(qrData: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/driver/scan-delivery`, { qrData });
+  }
+
   updateLocation(latitude: number, longitude: number): Observable<any> {
     return this.http.put(`${this.apiUrl}/driver/location`, { latitude, longitude });
   }

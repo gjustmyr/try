@@ -360,6 +360,7 @@ exports.getAllDeliveries = async (req, res) => {
         { model: Order, as: "order", include: [{ model: User, as: "user", attributes: ["id", "fullName", "email"] }, { model: Address, as: "address" }] },
         { model: Driver, as: "driver", attributes: ["id", "fullName", "phone", "vehicleType", "currentLatitude", "currentLongitude"] },
         { model: DeliveryHub, as: "hub", attributes: ["id", "name", "address", "latitude", "longitude"] },
+        { model: DeliveryHub, as: "destinationHub", attributes: ["id", "name", "address", "latitude", "longitude"] },
       ],
       order: [["createdAt", "DESC"]],
     });
