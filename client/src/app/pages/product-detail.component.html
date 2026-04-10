@@ -1,0 +1,332 @@
+<app-navbar></app-navbar>
+<div class="product-detail-page">
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-bar">
+    <div class="container">
+      <div class="breadcrumb">
+        <a (click)="goBack()" class="breadcrumb-link">
+          <i class="pi pi-home"></i> Home
+        </a>
+        <i class="pi pi-angle-right breadcrumb-sep"></i>
+        @if (product?.category) {
+          <span class="breadcrumb-link">{{ product.category }}</span>
+          <i class="pi pi-angle-right breadcrumb-sep"></i>
+        }
+        <span class="breadcrumb-current">{{ product?.name || 'Product' }}</span>
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="container">
+      <div class="loading-state">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>Loading product details...</p>
+      </div>
+    </div>
+  } @else if (!product) {
+    <div class="container">
+      <div class="empty-state">
+        <i class="pi pi-exclamation-circle"></i>
+        <h3>Product not found</h3>
+        <p>This product may have been removed or is no longer available.</p>
+        <button class="back-btn" (click)="goBack()">
+          <i class="pi pi-arrow-left"></i> Back to Home
+        </button>
+      </div>
+    </div>
+  } @else {
+    <div class="container">
+      <!-- Main Product Section -->
+      <div class="product-main">
+        <!-- Image Gallery -->
+        <div class="gallery-section">
+          <div class="main-image-wrapper">
+            @if (product.images && product.images.length > 0) {
+              <img [src]="selectedImage" [alt]="product.name" class="main-image" />
+            } @else {
+              <div class="no-image-large">
+                <i class="pi pi-image"></i>
+                <span>No image available</span>
+              </div>
+            }
+            @if (discountPercent > 0) {
+              <span class="discount-badge">-{{ discountPercent }}%</span>
+            }
+            @if (product.quantity <= 0) {
+              <div class="out-of-stock-overlay">Out of Stock</div>
+            }
+          </div>
+
+          @if (product.images && product.images.length > 1) {
+            <div class="thumbnail-row">
+              @for (image of product.images; track $index) {
+                <div
+                  class="thumbnail"
+                  [class.active]="selectedImageIndex === $index"
+                  (click)="selectImage($index)"
+                >
+                  <img [src]="image.url" [alt]="product.name + ' image ' + ($index + 1)" />
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Product Info -->
+        <div class="info-section">
+          @if (product.seller) {
+            <div class="seller-info" (click)="goToShop(product.seller.id)">
+              <span class="seller-icon">🏪</span>
+              <span class="seller-name">{{ product.seller.shopName }}</span>
+              @if (product.seller.rating) {
+                <span class="seller-rating">
+                  <i class="pi pi-star-fill"></i> {{ product.seller.rating }}
+                </span>
+              }
+            </div>
+          }
+
+          <h1 class="product-title">{{ product.name }}</h1>
+
+          @if (product.category) {
+            <span class="product-category-tag">{{ product.category }}</span>
+          }
+
+          <!-- Rating Summary -->
+          <div class="rating-summary">
+            <div class="stars">
+              @for (star of getStars(averageRating); track $index) {
+                <i
+                  class="pi"
+                  [class.pi-star-fill]="star === 1"
+                  [class.pi-star]="star === 0"
+                ></i>
+              }
+            </div>
+            <span class="rating-score">{{ averageRating }}</span>
+            <span class="rating-count">({{ reviews.length }} reviews)</span>
+            <span class="divider">|</span>
+            <span class="sales-count">
+              <i class="pi pi-shopping-bag"></i> {{ product.sales || 0 }} sold
+            </span>
+          </div>
+
+          <!-- Price Section -->
+          <div class="price-block">
+            <div class="price-row">
+              <span class="current-price">₱{{ product.price }}</span>
+              @if (product.compareAtPrice && product.compareAtPrice > product.price) {
+                <span class="original-price">₱{{ product.compareAtPrice }}</span>
+                <span class="discount-tag">Save {{ discountPercent }}%</span>
+              }
+            </div>
+          </div>
+
+          <!-- Product Meta -->
+          <div class="meta-info">
+            <div class="meta-row">
+              <span class="meta-label">Availability:</span>
+              @if (product.quantity > 0) {
+                <span class="in-stock">
+                  <i class="pi pi-check-circle"></i> In Stock ({{ product.quantity }} available)
+                </span>
+              } @else {
+                <span class="out-of-stock-text">
+                  <i class="pi pi-times-circle"></i> Out of Stock
+                </span>
+              }
+            </div>
+            @if (product.sku) {
+              <div class="meta-row">
+                <span class="meta-label">SKU:</span>
+                <span class="meta-value">{{ product.sku }}</span>
+              </div>
+            }
+            @if (product.tags && product.tags.length > 0) {
+              <div class="meta-row">
+                <span class="meta-label">Tags:</span>
+                <div class="tags-list">
+                  @for (tag of product.tags; track tag) {
+                    <span class="product-tag">{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Quantity & Actions -->
+          @if (product.quantity > 0) {
+            <div class="actions-section">
+              <div class="quantity-selector">
+                <button class="qty-btn" (click)="decrementQuantity()" [disabled]="quantity <= 1">
+                  <i class="pi pi-minus"></i>
+                </button>
+                <span class="qty-value">{{ quantity }}</span>
+                <button
+                  class="qty-btn"
+                  (click)="incrementQuantity()"
+                  [disabled]="quantity >= product.quantity"
+                >
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+              <button class="add-to-cart-btn" (click)="addToCart()">
+                <i class="pi pi-shopping-cart"></i> Add to Cart
+              </button>
+              <button class="wishlist-btn" (click)="addToWishlist()">
+                <i class="pi pi-heart"></i>
+              </button>
+            </div>
+
+            <div class="cart-message" *ngIf="cartMessage">
+              <i class="pi pi-check-circle"></i> {{ cartMessage }}
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Tabs Section -->
+      <div class="tabs-section">
+        <div class="tab-headers">
+          <button
+            class="tab-header"
+            [class.active]="activeTab === 'description'"
+            (click)="activeTab = 'description'"
+          >
+            <i class="pi pi-file-edit"></i> Description
+          </button>
+          <button
+            class="tab-header"
+            [class.active]="activeTab === 'reviews'"
+            (click)="activeTab = 'reviews'"
+          >
+            <i class="pi pi-comments"></i> Reviews ({{ reviews.length }})
+          </button>
+        </div>
+
+        <div class="tab-content">
+          @if (activeTab === 'description') {
+            <div class="description-tab">
+              @if (product.description) {
+                <div class="description-text">{{ product.description }}</div>
+              } @else {
+                <p class="no-description">No description provided for this product.</p>
+              }
+
+              @if (product.weight) {
+                <div class="spec-table">
+                  <h4>Specifications</h4>
+                  <div class="spec-row">
+                    <span class="spec-label">Weight</span>
+                    <span class="spec-value">{{ product.weight }} {{ product.weightUnit }}</span>
+                  </div>
+                  @if (product.barcode) {
+                    <div class="spec-row">
+                      <span class="spec-label">Barcode</span>
+                      <span class="spec-value">{{ product.barcode }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+
+          @if (activeTab === 'reviews') {
+            <div class="reviews-tab">
+              <!-- Rating Overview with Breakdown -->
+              <div class="rating-overview">
+                <div class="rating-big">
+                  <span class="big-number">{{ averageRating }}</span>
+                  <div class="big-stars">
+                    @for (star of getStars(averageRating); track $index) {
+                      <i
+                        class="pi"
+                        [class.pi-star-fill]="star === 1"
+                        [class.pi-star]="star === 0"
+                      ></i>
+                    }
+                  </div>
+                  <span class="total-reviews">Based on {{ reviews.length }} reviews</span>
+                </div>
+
+                <div class="rating-breakdown">
+                  @for (star of [5, 4, 3, 2, 1]; track star) {
+                    <div
+                      class="breakdown-row"
+                      [class.active]="reviewFilter === star"
+                      (click)="setReviewFilter(star)"
+                    >
+                      <span class="breakdown-label">{{ star }} <i class="pi pi-star-fill"></i></span>
+                      <div class="breakdown-bar">
+                        <div
+                          class="breakdown-fill"
+                          [style.width.%]="ratingPercent(star)"
+                        ></div>
+                      </div>
+                      <span class="breakdown-count">{{ ratingCounts[star] }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Filter Chips -->
+              <div class="review-filters">
+                <button
+                  class="filter-chip"
+                  [class.active]="reviewFilter === 0"
+                  (click)="setReviewFilter(0)"
+                >
+                  All ({{ reviews.length }})
+                </button>
+                @for (star of [5, 4, 3, 2, 1]; track star) {
+                  <button
+                    class="filter-chip"
+                    [class.active]="reviewFilter === star"
+                    (click)="setReviewFilter(star)"
+                  >
+                    {{ star }} <i class="pi pi-star-fill"></i> ({{ ratingCounts[star] }})
+                  </button>
+                }
+              </div>
+
+              <!-- Review List -->
+              <div class="reviews-list">
+                @if (filteredReviews.length === 0) {
+                  <div class="no-reviews">
+                    <i class="pi pi-comments"></i>
+                    <p>No reviews with this rating yet</p>
+                    <button class="clear-filter-btn" (click)="setReviewFilter(0)">Show all reviews</button>
+                  </div>
+                } @else {
+                  @for (review of filteredReviews; track review.id) {
+                    <div class="review-card">
+                      <div class="review-header">
+                        <div class="reviewer-avatar">{{ review.avatar }}</div>
+                        <div class="reviewer-info">
+                          <span class="reviewer-name">{{ review.author }}</span>
+                          <span class="review-date">{{ review.date }}</span>
+                        </div>
+                        <div class="review-stars">
+                          @for (star of getStars(review.rating); track $index) {
+                            <i
+                              class="pi"
+                              [class.pi-star-fill]="star === 1"
+                              [class.pi-star]="star === 0"
+                            ></i>
+                          }
+                        </div>
+                      </div>
+                      <p class="review-comment">{{ review.comment }}</p>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</div>
+<app-footer></app-footer>
