@@ -16,7 +16,10 @@ router.get("/sellers", adminController.getAllSellers);
 router.get("/sellers/:sellerId", adminController.getSellerDetail);
 router.put("/sellers/:sellerId/approve", adminController.approveSeller);
 router.put("/sellers/:sellerId/reject", adminController.rejectSeller);
-router.put("/sellers/:sellerId/toggle-status", adminController.toggleSellerStatus);
+router.put(
+	"/sellers/:sellerId/toggle-status",
+	adminController.toggleSellerStatus,
+);
 
 // Hub management
 router.get("/hubs", adminController.getHubs);
@@ -32,5 +35,6 @@ router.delete("/drivers/:driverId", adminController.deleteDriver);
 
 // Deliveries
 router.get("/deliveries", adminController.getAllDeliveries);
+router.get("/orders/search", adminController.searchOrders);
 
 module.exports = router;

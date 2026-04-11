@@ -18,27 +18,27 @@ export class CartService {
   }
 
   addToCart(productId: string, quantity: number = 1): Observable<any> {
-    return this.http.post(`${this.apiUrl}/cart/add`, { productId, quantity }).pipe(
-      tap(() => this.refreshCartCount()),
-    );
+    return this.http
+      .post(`${this.apiUrl}/cart/add`, { productId, quantity })
+      .pipe(tap(() => this.refreshCartCount()));
   }
 
   updateCartItem(itemId: string, quantity: number): Observable<any> {
-    return this.http.put(`${this.apiUrl}/cart/item/${itemId}`, { quantity }).pipe(
-      tap(() => this.refreshCartCount()),
-    );
+    return this.http
+      .put(`${this.apiUrl}/cart/item/${itemId}`, { quantity })
+      .pipe(tap(() => this.refreshCartCount()));
   }
 
   removeFromCart(itemId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/cart/item/${itemId}`).pipe(
-      tap(() => this.refreshCartCount()),
-    );
+    return this.http
+      .delete(`${this.apiUrl}/cart/item/${itemId}`)
+      .pipe(tap(() => this.refreshCartCount()));
   }
 
   clearCart(): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/cart/clear`).pipe(
-      tap(() => this.cartCountSubject.next(0)),
-    );
+    return this.http
+      .delete(`${this.apiUrl}/cart/clear`)
+      .pipe(tap(() => this.cartCountSubject.next(0)));
   }
 
   getCartCount(): Observable<any> {

@@ -113,8 +113,12 @@ const startServer = async () => {
 
 		// Migrate ENUM columns to VARCHAR before sync to support new status values
 		try {
-			await sequelize.query(`ALTER TABLE deliveries ALTER COLUMN status TYPE VARCHAR(255) USING status::VARCHAR(255);`);
-			await sequelize.query(`ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(255) USING status::VARCHAR(255);`);
+			await sequelize.query(
+				`ALTER TABLE deliveries ALTER COLUMN status TYPE VARCHAR(255) USING status::VARCHAR(255);`,
+			);
+			await sequelize.query(
+				`ALTER TABLE orders ALTER COLUMN status TYPE VARCHAR(255) USING status::VARCHAR(255);`,
+			);
 			console.log("✓ Status columns migrated to VARCHAR");
 		} catch (e) {
 			// Columns may already be VARCHAR - ignore
@@ -127,7 +131,7 @@ const startServer = async () => {
 		// Backfill estimatedDelivery for existing orders that don't have one
 		const { Order } = require("./models");
 		const [backfilled] = await sequelize.query(
-			`UPDATE orders SET estimated_delivery = created_at + INTERVAL '7 days' WHERE estimated_delivery IS NULL AND status NOT IN ('delivered', 'cancelled')`
+			`UPDATE orders SET estimated_delivery = created_at + INTERVAL '7 days' WHERE estimated_delivery IS NULL AND status NOT IN ('delivered', 'cancelled')`,
 		);
 		console.log("✓ Backfilled estimated_delivery for existing orders");
 

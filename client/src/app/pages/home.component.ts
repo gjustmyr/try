@@ -82,9 +82,7 @@ export class HomeComponent implements OnInit {
     if (this.selectedCategory === 'all') {
       return this.products;
     }
-    return this.products.filter(
-      (product) => product.category === this.selectedCategory,
-    );
+    return this.products.filter((product) => product.category === this.selectedCategory);
   }
 
   selectCategory(categoryId: string) {

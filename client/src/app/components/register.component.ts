@@ -93,7 +93,9 @@ import { AuthService } from '../services/auth.service';
         <!-- Step 2: OTP Verification -->
         <ng-container *ngIf="step === 'verify'">
           <h2>Verify Your Email</h2>
-          <p class="subtitle">We sent a 6-digit code to <strong>{{ email }}</strong></p>
+          <p class="subtitle">
+            We sent a 6-digit code to <strong>{{ email }}</strong>
+          </p>
 
           <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
           <div class="success-msg" *ngIf="successMessage">{{ successMessage }}</div>

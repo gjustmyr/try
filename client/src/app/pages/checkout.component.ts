@@ -40,7 +40,9 @@ L.Icon.Default.mergeOptions({
 
               <!-- Address Form -->
               <div class="address-form" *ngIf="showAddressForm">
-                <div class="form-title">{{ editingAddress ? 'Edit Address' : 'Add New Address' }}</div>
+                <div class="form-title">
+                  {{ editingAddress ? 'Edit Address' : 'Add New Address' }}
+                </div>
                 <div class="form-grid">
                   <div class="form-group">
                     <label>Label</label>
@@ -52,7 +54,11 @@ L.Icon.Default.mergeOptions({
                   </div>
                   <div class="form-group">
                     <label>Full Name *</label>
-                    <input type="text" [(ngModel)]="addressForm.fullName" placeholder="Recipient full name" />
+                    <input
+                      type="text"
+                      [(ngModel)]="addressForm.fullName"
+                      placeholder="Recipient full name"
+                    />
                   </div>
                   <div class="form-group">
                     <label>Phone *</label>
@@ -60,7 +66,11 @@ L.Icon.Default.mergeOptions({
                   </div>
                   <div class="form-group">
                     <label>Region *</label>
-                    <input type="text" [(ngModel)]="addressForm.region" placeholder="e.g. NCR, Region VII" />
+                    <input
+                      type="text"
+                      [(ngModel)]="addressForm.region"
+                      placeholder="e.g. NCR, Region VII"
+                    />
                   </div>
                   <div class="form-group">
                     <label>Province *</label>
@@ -76,11 +86,19 @@ L.Icon.Default.mergeOptions({
                   </div>
                   <div class="form-group">
                     <label>Postal Code *</label>
-                    <input type="text" [(ngModel)]="addressForm.postalCode" placeholder="e.g. 1000" />
+                    <input
+                      type="text"
+                      [(ngModel)]="addressForm.postalCode"
+                      placeholder="e.g. 1000"
+                    />
                   </div>
                   <div class="form-group full-width">
                     <label>Street Address *</label>
-                    <input type="text" [(ngModel)]="addressForm.streetAddress" placeholder="House/Unit No., Street, Building" />
+                    <input
+                      type="text"
+                      [(ngModel)]="addressForm.streetAddress"
+                      placeholder="House/Unit No., Street, Building"
+                    />
                   </div>
                   <div class="form-group full-width">
                     <label class="checkbox-label">
@@ -94,7 +112,12 @@ L.Icon.Default.mergeOptions({
                 <div class="map-section">
                   <div class="map-header">
                     <label><i class="pi pi-map"></i> Pin Location</label>
-                    <button type="button" class="locate-btn" (click)="locateFromAddress()" [disabled]="geocoding">
+                    <button
+                      type="button"
+                      class="locate-btn"
+                      (click)="locateFromAddress()"
+                      [disabled]="geocoding"
+                    >
                       <i class="pi pi-spin pi-spinner" *ngIf="geocoding"></i>
                       <i class="pi pi-search" *ngIf="!geocoding"></i>
                       Locate from address
@@ -135,11 +158,16 @@ L.Icon.Default.mergeOptions({
                       <span class="addr-badge default" *ngIf="addr.isDefault">Default</span>
                       <span class="addr-badge">{{ addr.label }}</span>
                     </div>
-                    <p class="addr-detail">{{ addr.streetAddress }}, {{ addr.barangay }}, {{ addr.city }}, {{ addr.province }}, {{ addr.region }} {{ addr.postalCode }}</p>
+                    <p class="addr-detail">
+                      {{ addr.streetAddress }}, {{ addr.barangay }}, {{ addr.city }},
+                      {{ addr.province }}, {{ addr.region }} {{ addr.postalCode }}
+                    </p>
                     <div class="addr-actions">
                       <button (click)="editAddress(addr, $event)">Edit</button>
                       <button (click)="deleteAddr(addr, $event)">Delete</button>
-                      <button *ngIf="!addr.isDefault" (click)="setDefault(addr, $event)">Set Default</button>
+                      <button *ngIf="!addr.isDefault" (click)="setDefault(addr, $event)">
+                        Set Default
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -153,14 +181,20 @@ L.Icon.Default.mergeOptions({
                 <div class="order-item" *ngFor="let item of checkoutItems">
                   <div class="oi-img">
                     <img *ngIf="item.product.images?.length" [src]="item.product.images[0].url" />
-                    <div *ngIf="!item.product.images?.length" class="oi-no-img"><i class="pi pi-image"></i></div>
+                    <div *ngIf="!item.product.images?.length" class="oi-no-img">
+                      <i class="pi pi-image"></i>
+                    </div>
                   </div>
                   <div class="oi-info">
                     <div class="oi-name">{{ item.product.name }}</div>
-                    <div class="oi-seller" *ngIf="item.product.seller">{{ item.product.seller.shopName }}</div>
+                    <div class="oi-seller" *ngIf="item.product.seller">
+                      {{ item.product.seller.shopName }}
+                    </div>
                   </div>
                   <div class="oi-qty">x{{ item.quantity }}</div>
-                  <div class="oi-price">₱{{ (item.product.price * item.quantity) | number:'1.2-2' }}</div>
+                  <div class="oi-price">
+                    ₱{{ item.product.price * item.quantity | number: '1.2-2' }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -168,7 +202,11 @@ L.Icon.Default.mergeOptions({
             <!-- Notes -->
             <div class="section">
               <h3><i class="pi pi-file-edit"></i> Order Notes</h3>
-              <textarea [(ngModel)]="orderNotes" placeholder="Add notes for the seller (optional)..." rows="3"></textarea>
+              <textarea
+                [(ngModel)]="orderNotes"
+                placeholder="Add notes for the seller (optional)..."
+                rows="3"
+              ></textarea>
             </div>
           </div>
 
@@ -178,7 +216,7 @@ L.Icon.Default.mergeOptions({
               <h3>Order Summary</h3>
               <div class="summary-row">
                 <span>Subtotal ({{ totalQty }} item{{ totalQty > 1 ? 's' : '' }})</span>
-                <span>₱{{ subtotal | number:'1.2-2' }}</span>
+                <span>₱{{ subtotal | number: '1.2-2' }}</span>
               </div>
               <div class="summary-row">
                 <span>Shipping</span>
@@ -187,13 +225,17 @@ L.Icon.Default.mergeOptions({
               <div class="divider"></div>
               <div class="summary-row total">
                 <span>Total</span>
-                <span>₱{{ subtotal | number:'1.2-2' }}</span>
+                <span>₱{{ subtotal | number: '1.2-2' }}</span>
               </div>
               <div class="payment-method">
                 <div class="pm-label">Payment Method</div>
                 <div class="pm-value"><i class="pi pi-wallet"></i> Cash on Delivery (COD)</div>
               </div>
-              <button class="place-order-btn" (click)="placeOrder()" [disabled]="placingOrder || !selectedAddressId">
+              <button
+                class="place-order-btn"
+                (click)="placeOrder()"
+                [disabled]="placingOrder || !selectedAddressId"
+              >
                 <i class="pi pi-spin pi-spinner" *ngIf="placingOrder"></i>
                 <i class="pi pi-check" *ngIf="!placingOrder"></i>
                 {{ placingOrder ? 'Placing Order...' : 'Place Order' }}
@@ -210,10 +252,15 @@ L.Icon.Default.mergeOptions({
       <div class="modal-box">
         <div class="success-icon"><i class="pi pi-check-circle"></i></div>
         <h3>Order Placed!</h3>
-        <p>Your order <strong>{{ placedOrderNumber }}</strong> has been placed successfully.</p>
+        <p>
+          Your order <strong>{{ placedOrderNumber }}</strong> has been placed successfully.
+        </p>
         <div class="eta-banner" *ngIf="placedOrderEta">
           <i class="pi pi-truck"></i>
-          <span>Estimated delivery by <strong>{{ placedOrderEta | date:'MMMM d, yyyy' }}</strong></span>
+          <span
+            >Estimated delivery by
+            <strong>{{ placedOrderEta | date: 'MMMM d, yyyy' }}</strong></span
+          >
         </div>
         <p class="sub-text">We'll send you updates on your order status.</p>
         <div class="modal-actions">
@@ -224,219 +271,645 @@ L.Icon.Default.mergeOptions({
     </div>
     <app-footer></app-footer>
   `,
-  styles: [`
-    .checkout-page { min-height: calc(100vh - 120px); background: #f9fafb; padding: 32px 0; }
-    .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
-    .page-title {
-      font-size: 22px; font-weight: 700; color: #1f2937;
-      display: flex; align-items: center; gap: 10px; margin-bottom: 24px;
-    }
-    .page-title i { font-size: 22px; }
+  styles: [
+    `
+      .checkout-page {
+        min-height: calc(100vh - 120px);
+        background: #f9fafb;
+        padding: 32px 0;
+      }
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .page-title {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1f2937;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+      .page-title i {
+        font-size: 22px;
+      }
 
-    .checkout-layout { display: grid; grid-template-columns: 1fr 360px; gap: 24px; align-items: start; }
-    .checkout-main { display: flex; flex-direction: column; gap: 20px; }
+      .checkout-layout {
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 24px;
+        align-items: start;
+      }
+      .checkout-main {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
 
-    .section {
-      background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 20px;
-    }
-    .section h3 {
-      font-size: 16px; font-weight: 600; color: #1f2937; margin: 0 0 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .section h3 i { color: #ff6b35; font-size: 16px; }
-    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-    .section-header h3 { margin: 0; }
+      .section {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        padding: 20px;
+      }
+      .section h3 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section h3 i {
+        color: #ff6b35;
+        font-size: 16px;
+      }
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .section-header h3 {
+        margin: 0;
+      }
 
-    /* Address Form */
-    .address-form { background: #f9fafb; border-radius: 10px; padding: 20px; border: 1px dashed #d1d5db; }
-    .form-title { font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 16px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .form-group { display: flex; flex-direction: column; gap: 4px; }
-    .form-group.full-width { grid-column: 1 / -1; }
-    .form-group label { font-size: 13px; font-weight: 500; color: #374151; }
-    .form-group input, .form-group select {
-      padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;
-      outline: none; transition: border 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus { border-color: #ff6b35; }
-    .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
-    .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #ff6b35; }
-    .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
-    .cancel-btn {
-      padding: 10px 20px; background: white; border: 1px solid #d1d5db; border-radius: 6px;
-      font-size: 14px; cursor: pointer; color: #374151;
-    }
-    .cancel-btn:hover { background: #f3f4f6; }
-    .save-btn {
-      padding: 10px 20px; background: #ff6b35; color: white; border: none; border-radius: 6px;
-      font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 6px;
-    }
-    .save-btn:hover:not(:disabled) { background: #e55a28; }
-    .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .add-addr-btn {
-      display: flex; align-items: center; gap: 6px; padding: 8px 16px;
-      background: white; border: 1px solid #ff6b35; color: #ff6b35; border-radius: 6px;
-      font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
-    }
-    .add-addr-btn:hover { background: #fff7f3; }
+      /* Address Form */
+      .address-form {
+        background: #f9fafb;
+        border-radius: 10px;
+        padding: 20px;
+        border: 1px dashed #d1d5db;
+      }
+      .form-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 16px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .form-group.full-width {
+        grid-column: 1 / -1;
+      }
+      .form-group label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #374151;
+      }
+      .form-group input,
+      .form-group select {
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        outline: none;
+        transition: border 0.2s;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        border-color: #ff6b35;
+      }
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .checkbox-label input[type='checkbox'] {
+        width: 16px;
+        height: 16px;
+        accent-color: #ff6b35;
+      }
+      .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .cancel-btn {
+        padding: 10px 20px;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        color: #374151;
+      }
+      .cancel-btn:hover {
+        background: #f3f4f6;
+      }
+      .save-btn {
+        padding: 10px 20px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .save-btn:hover:not(:disabled) {
+        background: #e55a28;
+      }
+      .save-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .add-addr-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: white;
+        border: 1px solid #ff6b35;
+        color: #ff6b35;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .add-addr-btn:hover {
+        background: #fff7f3;
+      }
 
-    /* Address List */
-    .no-address { text-align: center; padding: 30px; color: #6b7280; }
-    .no-address i { font-size: 36px; color: #d1d5db; margin-bottom: 10px; display: block; }
-    .no-address p { margin: 0 0 16px; font-size: 14px; }
-    .add-addr-btn-empty {
-      padding: 10px 24px; background: #ff6b35; color: white; border: none; border-radius: 8px;
-      font-size: 14px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-    }
-    .add-addr-btn-empty:hover { background: #e55a28; }
+      /* Address List */
+      .no-address {
+        text-align: center;
+        padding: 30px;
+        color: #6b7280;
+      }
+      .no-address i {
+        font-size: 36px;
+        color: #d1d5db;
+        margin-bottom: 10px;
+        display: block;
+      }
+      .no-address p {
+        margin: 0 0 16px;
+        font-size: 14px;
+      }
+      .add-addr-btn-empty {
+        padding: 10px 24px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .add-addr-btn-empty:hover {
+        background: #e55a28;
+      }
 
-    .address-card {
-      display: flex; gap: 12px; padding: 14px; border: 2px solid #e5e7eb;
-      border-radius: 10px; cursor: pointer; transition: all 0.15s; margin-bottom: 10px;
-    }
-    .address-card:last-child { margin-bottom: 0; }
-    .address-card:hover { border-color: #fca471; }
-    .address-card.active { border-color: #ff6b35; background: #fff7f3; }
-    .addr-radio { padding-top: 2px; }
-    .radio-dot {
-      width: 20px; height: 20px; border: 2px solid #d1d5db; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; transition: all 0.15s;
-    }
-    .radio-dot.selected { border-color: #ff6b35; }
-    .radio-dot.selected::after {
-      content: ''; width: 10px; height: 10px; background: #ff6b35; border-radius: 50%;
-    }
-    .addr-content { flex: 1; }
-    .addr-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-    .addr-name { font-weight: 600; font-size: 14px; color: #1f2937; }
-    .addr-phone { font-size: 13px; color: #6b7280; }
-    .addr-badge {
-      font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #f3f4f6; color: #6b7280;
-    }
-    .addr-badge.default { background: #fef3c7; color: #92400e; }
-    .addr-detail { font-size: 13px; color: #4b5563; margin: 0 0 8px; line-height: 1.4; }
-    .addr-actions { display: flex; gap: 12px; }
-    .addr-actions button {
-      background: none; border: none; font-size: 13px; color: #ff6b35;
-      cursor: pointer; padding: 0; font-weight: 500;
-    }
-    .addr-actions button:hover { text-decoration: underline; }
+      .address-card {
+        display: flex;
+        gap: 12px;
+        padding: 14px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-bottom: 10px;
+      }
+      .address-card:last-child {
+        margin-bottom: 0;
+      }
+      .address-card:hover {
+        border-color: #fca471;
+      }
+      .address-card.active {
+        border-color: #ff6b35;
+        background: #fff7f3;
+      }
+      .addr-radio {
+        padding-top: 2px;
+      }
+      .radio-dot {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #d1d5db;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+      }
+      .radio-dot.selected {
+        border-color: #ff6b35;
+      }
+      .radio-dot.selected::after {
+        content: '';
+        width: 10px;
+        height: 10px;
+        background: #ff6b35;
+        border-radius: 50%;
+      }
+      .addr-content {
+        flex: 1;
+      }
+      .addr-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+      }
+      .addr-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #1f2937;
+      }
+      .addr-phone {
+        font-size: 13px;
+        color: #6b7280;
+      }
+      .addr-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+      .addr-badge.default {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .addr-detail {
+        font-size: 13px;
+        color: #4b5563;
+        margin: 0 0 8px;
+        line-height: 1.4;
+      }
+      .addr-actions {
+        display: flex;
+        gap: 12px;
+      }
+      .addr-actions button {
+        background: none;
+        border: none;
+        font-size: 13px;
+        color: #ff6b35;
+        cursor: pointer;
+        padding: 0;
+        font-weight: 500;
+      }
+      .addr-actions button:hover {
+        text-decoration: underline;
+      }
 
-    /* Order Items */
-    .order-items { display: flex; flex-direction: column; gap: 10px; }
-    .order-item {
-      display: flex; align-items: center; gap: 12px; padding: 10px; background: #f9fafb; border-radius: 8px;
-    }
-    .oi-img { width: 56px; height: 56px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
-    .oi-img img { width: 100%; height: 100%; object-fit: cover; }
-    .oi-no-img {
-      width: 100%; height: 100%; background: #e5e7eb;
-      display: flex; align-items: center; justify-content: center; color: #9ca3af;
-    }
-    .oi-info { flex: 1; min-width: 0; }
-    .oi-name {
-      font-size: 14px; font-weight: 500; color: #1f2937;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .oi-seller { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .oi-qty { font-size: 13px; color: #6b7280; flex-shrink: 0; }
-    .oi-price { font-size: 14px; font-weight: 600; color: #ff6b35; flex-shrink: 0; }
+      /* Order Items */
+      .order-items {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .order-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        background: #f9fafb;
+        border-radius: 8px;
+      }
+      .oi-img {
+        width: 56px;
+        height: 56px;
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .oi-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .oi-no-img {
+        width: 100%;
+        height: 100%;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+      }
+      .oi-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .oi-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1f2937;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .oi-seller {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+      .oi-qty {
+        font-size: 13px;
+        color: #6b7280;
+        flex-shrink: 0;
+      }
+      .oi-price {
+        font-size: 14px;
+        font-weight: 600;
+        color: #ff6b35;
+        flex-shrink: 0;
+      }
 
-    /* Notes */
-    textarea {
-      width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px;
-      font-size: 14px; resize: vertical; outline: none; font-family: inherit;
-      box-sizing: border-box;
-    }
-    textarea:focus { border-color: #ff6b35; }
+      /* Notes */
+      textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        box-sizing: border-box;
+      }
+      textarea:focus {
+        border-color: #ff6b35;
+      }
 
-    /* Summary Sidebar */
-    .summary-sidebar { position: sticky; top: 24px; }
-    .summary-card {
-      background: white; border-radius: 12px; border: 1px solid #e5e7eb; padding: 24px;
-    }
-    .summary-card h3 { font-size: 17px; font-weight: 700; color: #1f2937; margin: 0 0 20px; }
-    .summary-row {
-      display: flex; justify-content: space-between; font-size: 14px; color: #4b5563; padding: 8px 0;
-    }
-    .free { color: #16a34a; font-weight: 500; }
-    .divider { height: 1px; background: #e5e7eb; margin: 12px 0; }
-    .total span { font-size: 16px; font-weight: 700; color: #1f2937; }
-    .payment-method { margin-top: 16px; padding: 12px; background: #f9fafb; border-radius: 8px; }
-    .pm-label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
-    .pm-value { font-size: 14px; color: #1f2937; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-    .pm-value i { color: #ff6b35; }
-    .place-order-btn {
-      width: 100%; padding: 14px; background: #ff6b35; color: white; border: none;
-      border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer;
-      margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px;
-    }
-    .place-order-btn:hover:not(:disabled) { background: #e55a28; }
-    .place-order-btn:disabled { background: #d1d5db; cursor: not-allowed; }
-    .error-msg { color: #dc2626; font-size: 13px; text-align: center; margin-top: 10px; }
+      /* Summary Sidebar */
+      .summary-sidebar {
+        position: sticky;
+        top: 24px;
+      }
+      .summary-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        padding: 24px;
+      }
+      .summary-card h3 {
+        font-size: 17px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0 0 20px;
+      }
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        color: #4b5563;
+        padding: 8px 0;
+      }
+      .free {
+        color: #16a34a;
+        font-weight: 500;
+      }
+      .divider {
+        height: 1px;
+        background: #e5e7eb;
+        margin: 12px 0;
+      }
+      .total span {
+        font-size: 16px;
+        font-weight: 700;
+        color: #1f2937;
+      }
+      .payment-method {
+        margin-top: 16px;
+        padding: 12px;
+        background: #f9fafb;
+        border-radius: 8px;
+      }
+      .pm-label {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 4px;
+      }
+      .pm-value {
+        font-size: 14px;
+        color: #1f2937;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .pm-value i {
+        color: #ff6b35;
+      }
+      .place-order-btn {
+        width: 100%;
+        padding: 14px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .place-order-btn:hover:not(:disabled) {
+        background: #e55a28;
+      }
+      .place-order-btn:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+      }
+      .error-msg {
+        color: #dc2626;
+        font-size: 13px;
+        text-align: center;
+        margin-top: 10px;
+      }
 
-    /* Success Modal */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); display: flex; align-items: center;
-      justify-content: center; z-index: 2000;
-    }
-    .modal-box {
-      background: white; border-radius: 16px; padding: 40px; text-align: center;
-      max-width: 440px; width: 90%;
-    }
-    .success-icon i { font-size: 56px; color: #16a34a; }
-    .modal-box h3 { font-size: 22px; font-weight: 700; color: #1f2937; margin: 16px 0 8px; }
-    .modal-box p { color: #4b5563; font-size: 14px; margin: 0 0 4px; }
-    .sub-text { color: #9ca3af !important; font-size: 13px !important; }
-    .modal-actions { display: flex; gap: 12px; margin-top: 24px; justify-content: center; }
-    .modal-btn {
-      padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
-    }
-    .modal-btn.secondary { background: #f3f4f6; color: #374151; }
-    .modal-btn.secondary:hover { background: #e5e7eb; }
-    .modal-btn.primary { background: #ff6b35; color: white; }
-    .modal-btn.primary:hover { background: #e55a28; }
+      /* Success Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+      }
+      .modal-box {
+        background: white;
+        border-radius: 16px;
+        padding: 40px;
+        text-align: center;
+        max-width: 440px;
+        width: 90%;
+      }
+      .success-icon i {
+        font-size: 56px;
+        color: #16a34a;
+      }
+      .modal-box h3 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 16px 0 8px;
+      }
+      .modal-box p {
+        color: #4b5563;
+        font-size: 14px;
+        margin: 0 0 4px;
+      }
+      .sub-text {
+        color: #9ca3af !important;
+        font-size: 13px !important;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        justify-content: center;
+      }
+      .modal-btn {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+      }
+      .modal-btn.secondary {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .modal-btn.secondary:hover {
+        background: #e5e7eb;
+      }
+      .modal-btn.primary {
+        background: #ff6b35;
+        color: white;
+      }
+      .modal-btn.primary:hover {
+        background: #e55a28;
+      }
 
-    .eta-banner {
-      display: flex; align-items: center; justify-content: center; gap: 8px;
-      background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
-      padding: 12px 16px; margin: 16px 0 0; color: #92400e; font-size: 14px; font-weight: 500;
-    }
-    .eta-banner i { font-size: 18px; color: #d97706; }
+      .eta-banner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-radius: 10px;
+        padding: 12px 16px;
+        margin: 16px 0 0;
+        color: #92400e;
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .eta-banner i {
+        font-size: 18px;
+        color: #d97706;
+      }
 
-    /* Map */
-    .map-section { margin-top: 16px; }
-    .map-header {
-      display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
-    }
-    .map-header label {
-      font-size: 13px; font-weight: 600; color: #374151;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .map-header label i { color: #ff6b35; font-size: 14px; }
-    .locate-btn {
-      display: flex; align-items: center; gap: 5px; padding: 6px 12px;
-      background: white; border: 1px solid #d1d5db; border-radius: 6px;
-      font-size: 12px; color: #374151; cursor: pointer; transition: all 0.2s;
-    }
-    .locate-btn:hover:not(:disabled) { border-color: #ff6b35; color: #ff6b35; }
-    .locate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .locate-btn i { font-size: 12px; }
-    .address-map {
-      width: 100%; height: 260px; border-radius: 10px; border: 1px solid #d1d5db;
-      overflow: hidden; z-index: 0;
-    }
-    .map-hint {
-      font-size: 12px; color: #9ca3af; margin: 6px 0 0; text-align: center;
-    }
+      /* Map */
+      .map-section {
+        margin-top: 16px;
+      }
+      .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .map-header label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .map-header label i {
+        color: #ff6b35;
+        font-size: 14px;
+      }
+      .locate-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 12px;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .locate-btn:hover:not(:disabled) {
+        border-color: #ff6b35;
+        color: #ff6b35;
+      }
+      .locate-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .locate-btn i {
+        font-size: 12px;
+      }
+      .address-map {
+        width: 100%;
+        height: 260px;
+        border-radius: 10px;
+        border: 1px solid #d1d5db;
+        overflow: hidden;
+        z-index: 0;
+      }
+      .map-hint {
+        font-size: 12px;
+        color: #9ca3af;
+        margin: 6px 0 0;
+        text-align: center;
+      }
 
-    @media (max-width: 768px) {
-      .checkout-layout { grid-template-columns: 1fr; }
-      .summary-sidebar { position: static; }
-      .form-grid { grid-template-columns: 1fr; }
-    }
-  `],
+      @media (max-width: 768px) {
+        .checkout-layout {
+          grid-template-columns: 1fr;
+        }
+        .summary-sidebar {
+          position: static;
+        }
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+  ],
 })
 export class CheckoutComponent implements OnInit, OnDestroy {
   checkoutItems: any[] = [];
@@ -512,7 +985,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   }
 
   get subtotal(): number {
-    return this.checkoutItems.reduce((sum: number, item: any) => sum + item.product.price * item.quantity, 0);
+    return this.checkoutItems.reduce(
+      (sum: number, item: any) => sum + item.product.price * item.quantity,
+      0,
+    );
   }
 
   get totalQty(): number {
@@ -521,7 +997,16 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   saveAddress() {
     const f = this.addressForm;
-    if (!f.fullName || !f.phone || !f.region || !f.province || !f.city || !f.barangay || !f.postalCode || !f.streetAddress) {
+    if (
+      !f.fullName ||
+      !f.phone ||
+      !f.region ||
+      !f.province ||
+      !f.city ||
+      !f.barangay ||
+      !f.postalCode ||
+      !f.streetAddress
+    ) {
       return;
     }
     this.savingAddress = true;
@@ -601,9 +1086,18 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   resetAddressForm() {
     this.addressForm = {
-      label: 'Home', fullName: '', phone: '', region: '', province: '',
-      city: '', barangay: '', postalCode: '', streetAddress: '', isDefault: false,
-      latitude: null, longitude: null,
+      label: 'Home',
+      fullName: '',
+      phone: '',
+      region: '',
+      province: '',
+      city: '',
+      barangay: '',
+      postalCode: '',
+      streetAddress: '',
+      isDefault: false,
+      latitude: null,
+      longitude: null,
     };
   }
 
@@ -617,7 +1111,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.destroyMap();
 
       const lat = this.addressForm.latitude || 12.8797;
-      const lng = this.addressForm.longitude || 121.7740;
+      const lng = this.addressForm.longitude || 121.774;
       const zoom = this.addressForm.latitude ? 16 : 6;
 
       this.map = L.map('address-map').setView([lat, lng], zoom);
@@ -654,7 +1148,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             this.addressForm.longitude = gLng;
             this.cdr.detectChanges();
           },
-          () => {}
+          () => {},
         );
       }
 
@@ -672,16 +1166,26 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   locateFromAddress() {
     const f = this.addressForm;
-    const parts = [f.streetAddress, f.barangay, f.city, f.province, f.region, 'Philippines'].filter(Boolean);
+    const parts = [f.streetAddress, f.barangay, f.city, f.province, f.region, 'Philippines'].filter(
+      Boolean,
+    );
     const query = parts.join(', ');
-    if (!query.replace(/Philippines/i, '').replace(/,\s*/g, '').trim()) return;
+    if (
+      !query
+        .replace(/Philippines/i, '')
+        .replace(/,\s*/g, '')
+        .trim()
+    )
+      return;
 
     this.geocoding = true;
     this.cdr.detectChanges();
 
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
-      .then(res => res.json())
-      .then(data => {
+    fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`,
+    )
+      .then((res) => res.json())
+      .then((data) => {
         this.geocoding = false;
         if (data && data.length > 0) {
           const lat = parseFloat(data[0].lat);
@@ -713,29 +1217,31 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.placingOrder = true;
     const cartItemIds = this.checkoutItems.map((item: any) => item.id);
 
-    this.orderService.placeOrder({
-      addressId: this.selectedAddressId,
-      cartItemIds,
-      notes: this.orderNotes || undefined,
-    }).subscribe({
-      next: (res: any) => {
-        this.placingOrder = false;
-        if (res.success) {
-          this.orderSuccess = true;
-          this.placedOrderNumber = res.data.orderNumber;
-          this.placedOrderEta = res.data.estimatedDelivery;
-          this.cartService.refreshCartCount();
-        } else {
-          this.errorMsg = res.message || 'Failed to place order';
-        }
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        this.placingOrder = false;
-        this.errorMsg = err.error?.message || 'Failed to place order';
-        this.cdr.detectChanges();
-      },
-    });
+    this.orderService
+      .placeOrder({
+        addressId: this.selectedAddressId,
+        cartItemIds,
+        notes: this.orderNotes || undefined,
+      })
+      .subscribe({
+        next: (res: any) => {
+          this.placingOrder = false;
+          if (res.success) {
+            this.orderSuccess = true;
+            this.placedOrderNumber = res.data.orderNumber;
+            this.placedOrderEta = res.data.estimatedDelivery;
+            this.cartService.refreshCartCount();
+          } else {
+            this.errorMsg = res.message || 'Failed to place order';
+          }
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          this.placingOrder = false;
+          this.errorMsg = err.error?.message || 'Failed to place order';
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   goHome() {

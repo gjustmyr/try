@@ -25,7 +25,10 @@ export class DriverService {
   }
 
   updateDeliveryStatus(deliveryId: string, status: string, notes?: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/driver/deliveries/${deliveryId}/status`, { status, notes });
+    return this.http.put(`${this.apiUrl}/driver/deliveries/${deliveryId}/status`, {
+      status,
+      notes,
+    });
   }
 
   scanDelivery(qrData: string): Observable<any> {

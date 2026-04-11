@@ -71,7 +71,12 @@ import { SellerService } from '../services/seller.service';
           <div class="filters-bar">
             <div class="search-box">
               <i class="pi pi-search"></i>
-              <input type="text" placeholder="Search customers..." [(ngModel)]="searchQuery" (input)="onSearch()" />
+              <input
+                type="text"
+                placeholder="Search customers..."
+                [(ngModel)]="searchQuery"
+                (input)="onSearch()"
+              />
             </div>
             <select class="filter-select" [(ngModel)]="sortBy" (change)="onSort()">
               <option value="spent">Top Spenders</option>
@@ -123,10 +128,10 @@ import { SellerService } from '../services/seller.service';
                         <span class="order-count-badge">{{ customer.orderCount }}</span>
                       </td>
                       <td>
-                        <span class="price">₱{{ customer.totalSpent | number:'1.2-2' }}</span>
+                        <span class="price">₱{{ customer.totalSpent | number: '1.2-2' }}</span>
                       </td>
-                      <td>{{ customer.lastOrderDate | date:'MMM d, yyyy' }}</td>
-                      <td>{{ customer.memberSince | date:'MMM d, yyyy' }}</td>
+                      <td>{{ customer.lastOrderDate | date: 'MMM d, yyyy' }}</td>
+                      <td>{{ customer.memberSince | date: 'MMM d, yyyy' }}</td>
                     </tr>
                   }
                 </tbody>
@@ -186,9 +191,7 @@ export class SellerCustomersComponent implements OnInit {
     if (this.searchQuery.trim()) {
       const q = this.searchQuery.toLowerCase();
       list = list.filter(
-        (c) =>
-          c.fullName?.toLowerCase().includes(q) ||
-          c.email?.toLowerCase().includes(q),
+        (c) => c.fullName?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q),
       );
     }
     this.filteredCustomers = list;
@@ -209,9 +212,7 @@ export class SellerCustomersComponent implements OnInit {
         );
         break;
       case 'name':
-        this.filteredCustomers.sort((a, b) =>
-          (a.fullName || '').localeCompare(b.fullName || ''),
-        );
+        this.filteredCustomers.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
         break;
     }
   }

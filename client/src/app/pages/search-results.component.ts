@@ -15,7 +15,10 @@ import { ProductService } from '../services/product.service';
     <div class="search-page">
       <div class="container">
         <div class="search-header">
-          <h2>Search results for "<span class="query-text">{{ query }}</span>"</h2>
+          <h2>
+            Search results for "<span class="query-text">{{ query }}</span
+            >"
+          </h2>
           <p class="result-count" *ngIf="!loading">
             {{ products.length }} product{{ products.length !== 1 ? 's' : '' }} and
             {{ shops.length }} store{{ shops.length !== 1 ? 's' : '' }} found
@@ -31,10 +34,17 @@ import { ProductService } from '../services/product.service';
           <h3 class="section-title"><i class="pi pi-shop"></i> Stores</h3>
           <div class="shops-grid">
             <div class="shop-card" *ngFor="let shop of shops" (click)="goToShop(shop.id)">
-              <div class="shop-banner" [style.backgroundImage]="shop.shopBanner?.url ? 'url(' + shop.shopBanner.url + ')' : ''">
+              <div
+                class="shop-banner"
+                [style.backgroundImage]="
+                  shop.shopBanner?.url ? 'url(' + shop.shopBanner.url + ')' : ''
+                "
+              >
                 <div class="shop-logo-wrap">
                   <img *ngIf="shop.shopLogo?.url" [src]="shop.shopLogo.url" class="shop-logo" />
-                  <div *ngIf="!shop.shopLogo?.url" class="shop-logo-fallback"><i class="pi pi-shop"></i></div>
+                  <div *ngIf="!shop.shopLogo?.url" class="shop-logo-fallback">
+                    <i class="pi pi-shop"></i>
+                  </div>
                 </div>
               </div>
               <div class="shop-info">
@@ -71,68 +81,182 @@ import { ProductService } from '../services/product.service';
     </div>
     <app-footer></app-footer>
   `,
-  styles: [`
-    .search-page { padding: 30px 0; background: #f9fafb; min-height: calc(100vh - 120px); }
-    .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
-    .search-header { margin-bottom: 28px; }
-    .search-header h2 { font-size: 22px; font-weight: 700; color: #1f2937; margin: 0 0 6px; }
-    .query-text { color: #ff6b35; }
-    .result-count { font-size: 14px; color: #6b7280; margin: 0; }
-    .loading { text-align: center; padding: 60px 0; font-size: 16px; color: #6b7280; }
-    .loading i { margin-right: 8px; }
+  styles: [
+    `
+      .search-page {
+        padding: 30px 0;
+        background: #f9fafb;
+        min-height: calc(100vh - 120px);
+      }
+      .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .search-header {
+        margin-bottom: 28px;
+      }
+      .search-header h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0 0 6px;
+      }
+      .query-text {
+        color: #ff6b35;
+      }
+      .result-count {
+        font-size: 14px;
+        color: #6b7280;
+        margin: 0;
+      }
+      .loading {
+        text-align: center;
+        padding: 60px 0;
+        font-size: 16px;
+        color: #6b7280;
+      }
+      .loading i {
+        margin-right: 8px;
+      }
 
-    .section { margin-bottom: 36px; }
-    .section-title {
-      font-size: 16px; font-weight: 600; color: #374151; margin: 0 0 16px;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .section-title i { color: #ff6b35; font-size: 15px; }
+      .section {
+        margin-bottom: 36px;
+      }
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #374151;
+        margin: 0 0 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .section-title i {
+        color: #ff6b35;
+        font-size: 15px;
+      }
 
-    /* Shops Grid */
-    .shops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-    .shop-card {
-      background: white; border-radius: 10px; overflow: hidden; cursor: pointer;
-      border: 1px solid #e5e7eb; transition: box-shadow 0.2s, transform 0.2s;
-    }
-    .shop-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-2px); }
-    .shop-banner {
-      height: 80px; background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
-      background-size: cover; background-position: center; position: relative;
-    }
-    .shop-logo-wrap { position: absolute; bottom: -22px; left: 16px; }
-    .shop-logo, .shop-logo-fallback {
-      width: 44px; height: 44px; border-radius: 50%; border: 3px solid white;
-      object-fit: cover; background: white;
-    }
-    .shop-logo-fallback {
-      display: flex; align-items: center; justify-content: center;
-      background: #f3f4f6; color: #9ca3af; font-size: 18px;
-    }
-    .shop-info { padding: 28px 16px 16px; }
-    .shop-name { font-size: 15px; font-weight: 600; color: #1f2937; margin: 0 0 4px; }
-    .shop-desc {
-      font-size: 13px; color: #6b7280; margin: 0 0 10px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
-    .shop-stats { display: flex; align-items: center; gap: 12px; font-size: 12px; color: #6b7280; }
-    .shop-stats i { font-size: 11px; color: #f59e0b; }
-    .badge {
-      background: #f3f4f6; padding: 2px 8px; border-radius: 4px;
-      font-size: 11px; text-transform: capitalize;
-    }
+      /* Shops Grid */
+      .shops-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+      .shop-card {
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 1px solid #e5e7eb;
+        transition:
+          box-shadow 0.2s,
+          transform 0.2s;
+      }
+      .shop-card:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+      }
+      .shop-banner {
+        height: 80px;
+        background: linear-gradient(135deg, #ff6b35 0%, #ff8c5a 100%);
+        background-size: cover;
+        background-position: center;
+        position: relative;
+      }
+      .shop-logo-wrap {
+        position: absolute;
+        bottom: -22px;
+        left: 16px;
+      }
+      .shop-logo,
+      .shop-logo-fallback {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 3px solid white;
+        object-fit: cover;
+        background: white;
+      }
+      .shop-logo-fallback {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f3f4f6;
+        color: #9ca3af;
+        font-size: 18px;
+      }
+      .shop-info {
+        padding: 28px 16px 16px;
+      }
+      .shop-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 4px;
+      }
+      .shop-desc {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0 0 10px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .shop-stats {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .shop-stats i {
+        font-size: 11px;
+        color: #f59e0b;
+      }
+      .badge {
+        background: #f3f4f6;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        text-transform: capitalize;
+      }
 
-    /* Products Grid */
-    .products-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
-    }
+      /* Products Grid */
+      .products-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 16px;
+      }
 
-    /* No Results */
-    .no-results { text-align: center; padding: 80px 0; color: #6b7280; }
-    .no-results i { font-size: 48px; color: #d1d5db; margin-bottom: 16px; }
-    .no-results h3 { font-size: 18px; color: #374151; margin: 0 0 8px; }
-    .no-results p { font-size: 14px; margin: 0; }
-    .no-results a { color: #ff6b35; cursor: pointer; text-decoration: underline; }
-  `],
+      /* No Results */
+      .no-results {
+        text-align: center;
+        padding: 80px 0;
+        color: #6b7280;
+      }
+      .no-results i {
+        font-size: 48px;
+        color: #d1d5db;
+        margin-bottom: 16px;
+      }
+      .no-results h3 {
+        font-size: 18px;
+        color: #374151;
+        margin: 0 0 8px;
+      }
+      .no-results p {
+        font-size: 14px;
+        margin: 0;
+      }
+      .no-results a {
+        color: #ff6b35;
+        cursor: pointer;
+        text-decoration: underline;
+      }
+    `,
+  ],
 })
 export class SearchResultsComponent implements OnInit {
   query = '';

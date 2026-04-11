@@ -78,7 +78,12 @@ import { CATEGORIES } from '../data/categories';
           <div class="filters-bar">
             <div class="search-box">
               <i class="pi pi-search"></i>
-              <input type="text" placeholder="Search products..." [(ngModel)]="searchQuery" (input)="onSearch()" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                [(ngModel)]="searchQuery"
+                (input)="onSearch()"
+              />
             </div>
             <select class="filter-select" [(ngModel)]="statusFilter" (change)="loadProducts()">
               <option value="">All Status</option>
@@ -332,17 +337,32 @@ import { CATEGORIES } from '../data/categories';
 
               <div class="form-group">
                 <label>Description</label>
-                <textarea [(ngModel)]="editProduct.description" name="editDescription" rows="4"></textarea>
+                <textarea
+                  [(ngModel)]="editProduct.description"
+                  name="editDescription"
+                  rows="4"
+                ></textarea>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label>Price <span class="required">*</span></label>
-                  <input type="number" [(ngModel)]="editProduct.price" name="editPrice" step="0.01" required />
+                  <input
+                    type="number"
+                    [(ngModel)]="editProduct.price"
+                    name="editPrice"
+                    step="0.01"
+                    required
+                  />
                 </div>
                 <div class="form-group">
                   <label>Compare at Price</label>
-                  <input type="number" [(ngModel)]="editProduct.compareAtPrice" name="editCompareAtPrice" step="0.01" />
+                  <input
+                    type="number"
+                    [(ngModel)]="editProduct.compareAtPrice"
+                    name="editCompareAtPrice"
+                    step="0.01"
+                  />
                 </div>
               </div>
 
@@ -353,7 +373,12 @@ import { CATEGORIES } from '../data/categories';
                 </div>
                 <div class="form-group">
                   <label>Quantity <span class="required">*</span></label>
-                  <input type="number" [(ngModel)]="editProduct.quantity" name="editQuantity" required />
+                  <input
+                    type="number"
+                    [(ngModel)]="editProduct.quantity"
+                    name="editQuantity"
+                    required
+                  />
                 </div>
               </div>
 
@@ -384,7 +409,12 @@ import { CATEGORIES } from '../data/categories';
                       <div class="preview-item">
                         <img [src]="img.url" alt="Product image" />
                         <div class="preview-actions">
-                          <button type="button" class="remove-btn" (click)="removeExistingImage(i)" title="Remove">
+                          <button
+                            type="button"
+                            class="remove-btn"
+                            (click)="removeExistingImage(i)"
+                            title="Remove"
+                          >
                             <i class="pi pi-times"></i>
                           </button>
                         </div>
@@ -398,7 +428,14 @@ import { CATEGORIES } from '../data/categories';
 
               <div class="form-group">
                 <label>Add New Images</label>
-                <input type="file" (change)="onEditFileSelect($event)" accept="image/*" multiple id="editImageUpload" style="display: none;" />
+                <input
+                  type="file"
+                  (change)="onEditFileSelect($event)"
+                  accept="image/*"
+                  multiple
+                  id="editImageUpload"
+                  style="display: none;"
+                />
                 <label for="editImageUpload" class="upload-btn">
                   <i class="pi pi-cloud-upload"></i>
                   <span>Choose Images</span>
@@ -409,7 +446,12 @@ import { CATEGORIES } from '../data/categories';
                       <div class="preview-item">
                         <img [src]="preview.url" alt="Preview" />
                         <div class="preview-actions">
-                          <button type="button" class="remove-btn" (click)="removeEditImage(i)" title="Remove">
+                          <button
+                            type="button"
+                            class="remove-btn"
+                            (click)="removeEditImage(i)"
+                            title="Remove"
+                          >
                             <i class="pi pi-times"></i>
                           </button>
                         </div>
@@ -421,7 +463,9 @@ import { CATEGORIES } from '../data/categories';
             </div>
 
             <div class="modal-footer">
-              <button type="button" class="cancel-btn" (click)="showEditModal = false">Cancel</button>
+              <button type="button" class="cancel-btn" (click)="showEditModal = false">
+                Cancel
+              </button>
               <button type="submit" class="submit-btn" [disabled]="isSubmitting">
                 @if (isSubmitting) {
                   <i class="pi pi-spin pi-spinner"></i>
@@ -678,7 +722,8 @@ export class SellerProductsComponent implements OnInit {
     const files = Array.from(event.target.files) as File[];
     if (files.length === 0) return;
 
-    const totalImages = this.editProduct.existingImages.length + this.editImagePreviews.length + files.length;
+    const totalImages =
+      this.editProduct.existingImages.length + this.editImagePreviews.length + files.length;
     if (totalImages > 5) {
       alert('Maximum 5 images allowed in total');
       return;

@@ -9,7 +9,10 @@ router.use(authorize("driver"));
 router.get("/profile", driverController.getProfile);
 router.get("/stats", driverController.getStats);
 router.get("/deliveries", driverController.getMyDeliveries);
-router.put("/deliveries/:deliveryId/status", driverController.updateDeliveryStatus);
+router.put(
+	"/deliveries/:deliveryId/status",
+	driverController.updateDeliveryStatus,
+);
 router.post("/scan-delivery", driverController.scanDelivery);
 router.put("/location", driverController.updateLocation);
 router.put("/availability", driverController.toggleAvailability);

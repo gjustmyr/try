@@ -19,32 +19,32 @@ router.get("/:productId", productController.getProduct);
 
 // Create product (seller only)
 router.post(
-  "/",
-  authorize("seller"),
-  uploadProductImages,
-  productController.createProduct,
+	"/",
+	authorize("seller"),
+	uploadProductImages,
+	productController.createProduct,
 );
 
 // Update product (seller only)
 router.put(
-  "/:productId",
-  authorize("seller"),
-  uploadProductImages,
-  productController.updateProduct,
+	"/:productId",
+	authorize("seller"),
+	uploadProductImages,
+	productController.updateProduct,
 );
 
 // Delete product (seller only)
 router.delete(
-  "/:productId",
-  authorize("seller"),
-  productController.deleteProduct,
+	"/:productId",
+	authorize("seller"),
+	productController.deleteProduct,
 );
 
 // Toggle publish status (seller only)
 router.patch(
-  "/:productId/publish",
-  authorize("seller"),
-  productController.togglePublish,
+	"/:productId/publish",
+	authorize("seller"),
+	productController.togglePublish,
 );
 
 module.exports = router;

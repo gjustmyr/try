@@ -4,9 +4,7 @@
   <div class="breadcrumb-bar">
     <div class="container">
       <div class="breadcrumb">
-        <a (click)="goBack()" class="breadcrumb-link">
-          <i class="pi pi-home"></i> Home
-        </a>
+        <a (click)="goBack()" class="breadcrumb-link"> <i class="pi pi-home"></i> Home </a>
         <i class="pi pi-angle-right breadcrumb-sep"></i>
         @if (product?.category) {
           <span class="breadcrumb-link">{{ product.category }}</span>
@@ -97,11 +95,7 @@
           <div class="rating-summary">
             <div class="stars">
               @for (star of getStars(averageRating); track $index) {
-                <i
-                  class="pi"
-                  [class.pi-star-fill]="star === 1"
-                  [class.pi-star]="star === 0"
-                ></i>
+                <i class="pi" [class.pi-star-fill]="star === 1" [class.pi-star]="star === 0"></i>
               }
             </div>
             <span class="rating-score">{{ averageRating }}</span>
@@ -257,12 +251,11 @@
                       [class.active]="reviewFilter === star"
                       (click)="setReviewFilter(star)"
                     >
-                      <span class="breakdown-label">{{ star }} <i class="pi pi-star-fill"></i></span>
+                      <span class="breakdown-label"
+                        >{{ star }} <i class="pi pi-star-fill"></i
+                      ></span>
                       <div class="breakdown-bar">
-                        <div
-                          class="breakdown-fill"
-                          [style.width.%]="ratingPercent(star)"
-                        ></div>
+                        <div class="breakdown-fill" [style.width.%]="ratingPercent(star)"></div>
                       </div>
                       <span class="breakdown-count">{{ ratingCounts[star] }}</span>
                     </div>
@@ -296,7 +289,9 @@
                   <div class="no-reviews">
                     <i class="pi pi-comments"></i>
                     <p>No reviews with this rating yet</p>
-                    <button class="clear-filter-btn" (click)="setReviewFilter(0)">Show all reviews</button>
+                    <button class="clear-filter-btn" (click)="setReviewFilter(0)">
+                      Show all reviews
+                    </button>
                   </div>
                 } @else {
                   @for (review of filteredReviews; track review.id) {

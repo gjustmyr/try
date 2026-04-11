@@ -78,11 +78,20 @@ import * as L from 'leaflet';
             } @else {
               <div class="settings-form-group">
                 <label>Store Name</label>
-                <input type="text" [(ngModel)]="profileForm.shopName" placeholder="Your store name" />
+                <input
+                  type="text"
+                  [(ngModel)]="profileForm.shopName"
+                  placeholder="Your store name"
+                />
               </div>
               <div class="settings-form-group">
                 <label>Store Description</label>
-                <textarea [(ngModel)]="profileForm.shopDescription" placeholder="Tell customers about your store..." rows="3" style="width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+                <textarea
+                  [(ngModel)]="profileForm.shopDescription"
+                  placeholder="Tell customers about your store..."
+                  rows="3"
+                  style="width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"
+                ></textarea>
               </div>
               <div class="settings-form-group">
                 <label>Phone</label>
@@ -90,18 +99,38 @@ import * as L from 'leaflet';
               </div>
               <div class="settings-form-group">
                 <label>Business Address</label>
-                <textarea [(ngModel)]="profileForm.businessAddress" placeholder="Your business address" rows="2" style="width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+                <textarea
+                  [(ngModel)]="profileForm.businessAddress"
+                  placeholder="Your business address"
+                  rows="2"
+                  style="width: 100%; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"
+                ></textarea>
               </div>
 
               <!-- Store Location Map -->
               <div class="settings-form-group">
-                <label><i class="pi pi-map-marker" style="margin-right: 6px; color: #ff6b35;"></i>Store Location</label>
-                <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px;">Click on the map to set your store's location. This is used for shipping route display.</p>
-                <div id="sellerLocationMap" style="width: 100%; height: 300px; border-radius: 10px; border: 1px solid #e5e7eb; overflow: hidden;"></div>
-                <div style="display: flex; gap: 12px; margin-top: 8px;" *ngIf="profileForm.latitude && profileForm.longitude">
-                  <span style="font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 4px 10px; border-radius: 6px;">
+                <label
+                  ><i class="pi pi-map-marker" style="margin-right: 6px; color: #ff6b35;"></i>Store
+                  Location</label
+                >
+                <p style="font-size: 12px; color: #6b7280; margin: 0 0 10px;">
+                  Click on the map to set your store's location. This is used for shipping route
+                  display.
+                </p>
+                <div
+                  id="sellerLocationMap"
+                  style="width: 100%; height: 300px; border-radius: 10px; border: 1px solid #e5e7eb; overflow: hidden;"
+                ></div>
+                <div
+                  style="display: flex; gap: 12px; margin-top: 8px;"
+                  *ngIf="profileForm.latitude && profileForm.longitude"
+                >
+                  <span
+                    style="font-size: 12px; color: #6b7280; background: #f3f4f6; padding: 4px 10px; border-radius: 6px;"
+                  >
                     <i class="pi pi-map-marker" style="color: #ff6b35; margin-right: 4px;"></i>
-                    {{ profileForm.latitude | number:'1.5-5' }}, {{ profileForm.longitude | number:'1.5-5' }}
+                    {{ profileForm.latitude | number: '1.5-5' }},
+                    {{ profileForm.longitude | number: '1.5-5' }}
                   </span>
                 </div>
               </div>
@@ -116,7 +145,9 @@ import * as L from 'leaflet';
                 </button>
               </div>
               @if (profileMsg) {
-                <p [class]="profileMsgType === 'success' ? 'success-msg' : 'error-msg'">{{ profileMsg }}</p>
+                <p [class]="profileMsgType === 'success' ? 'success-msg' : 'error-msg'">
+                  {{ profileMsg }}
+                </p>
               }
             }
           </div>
@@ -128,15 +159,27 @@ import * as L from 'leaflet';
 
             <div class="settings-form-group">
               <label>Current Password</label>
-              <input type="password" [(ngModel)]="passwordForm.currentPassword" placeholder="Enter current password" />
+              <input
+                type="password"
+                [(ngModel)]="passwordForm.currentPassword"
+                placeholder="Enter current password"
+              />
             </div>
             <div class="settings-form-group">
               <label>New Password</label>
-              <input type="password" [(ngModel)]="passwordForm.newPassword" placeholder="Enter new password (min 6 characters)" />
+              <input
+                type="password"
+                [(ngModel)]="passwordForm.newPassword"
+                placeholder="Enter new password (min 6 characters)"
+              />
             </div>
             <div class="settings-form-group">
               <label>Confirm New Password</label>
-              <input type="password" [(ngModel)]="passwordForm.confirmPassword" placeholder="Confirm new password" />
+              <input
+                type="password"
+                [(ngModel)]="passwordForm.confirmPassword"
+                placeholder="Confirm new password"
+              />
             </div>
             <div class="settings-actions">
               <button class="save-btn" (click)="changePassword()" [disabled]="isChangingPassword">
@@ -148,7 +191,9 @@ import * as L from 'leaflet';
               </button>
             </div>
             @if (passwordMsg) {
-              <p [class]="passwordMsgType === 'success' ? 'success-msg' : 'error-msg'">{{ passwordMsg }}</p>
+              <p [class]="passwordMsgType === 'success' ? 'success-msg' : 'error-msg'">
+                {{ passwordMsg }}
+              </p>
             }
           </div>
 
@@ -159,16 +204,29 @@ import * as L from 'leaflet';
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
               <div>
-                <span style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Email</span>
+                <span
+                  style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;"
+                  >Email</span
+                >
                 <p style="margin: 4px 0 0 0; font-size: 14px; color: #1f2937;">{{ userEmail }}</p>
               </div>
               <div>
-                <span style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Account Type</span>
+                <span
+                  style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;"
+                  >Account Type</span
+                >
                 <p style="margin: 4px 0 0 0; font-size: 14px; color: #1f2937;">Seller</p>
               </div>
               <div>
-                <span style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;">Seller ID</span>
-                <p style="margin: 4px 0 0 0; font-size: 14px; color: #1f2937; font-family: monospace;">{{ sellerId }}</p>
+                <span
+                  style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px;"
+                  >Seller ID</span
+                >
+                <p
+                  style="margin: 4px 0 0 0; font-size: 14px; color: #1f2937; font-family: monospace;"
+                >
+                  {{ sellerId }}
+                </p>
               </div>
             </div>
           </div>
@@ -355,29 +413,31 @@ export class SellerSettingsComponent implements OnInit, OnDestroy {
     }
 
     this.isChangingPassword = true;
-    this.sellerService.changePassword({
-      currentPassword: this.passwordForm.currentPassword,
-      newPassword: this.passwordForm.newPassword,
-    }).subscribe({
-      next: (res: any) => {
-        this.isChangingPassword = false;
-        if (res.success) {
-          this.passwordMsg = 'Password changed successfully!';
-          this.passwordMsgType = 'success';
-          this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
-        } else {
-          this.passwordMsg = res.message || 'Failed to change password.';
+    this.sellerService
+      .changePassword({
+        currentPassword: this.passwordForm.currentPassword,
+        newPassword: this.passwordForm.newPassword,
+      })
+      .subscribe({
+        next: (res: any) => {
+          this.isChangingPassword = false;
+          if (res.success) {
+            this.passwordMsg = 'Password changed successfully!';
+            this.passwordMsgType = 'success';
+            this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+          } else {
+            this.passwordMsg = res.message || 'Failed to change password.';
+            this.passwordMsgType = 'error';
+          }
+          this.cdr.detectChanges();
+        },
+        error: (error) => {
+          this.isChangingPassword = false;
+          this.passwordMsg = error.error?.message || 'Failed to change password.';
           this.passwordMsgType = 'error';
-        }
-        this.cdr.detectChanges();
-      },
-      error: (error) => {
-        this.isChangingPassword = false;
-        this.passwordMsg = error.error?.message || 'Failed to change password.';
-        this.passwordMsgType = 'error';
-        this.cdr.detectChanges();
-      },
-    });
+          this.cdr.detectChanges();
+        },
+      });
   }
 
   navigate(path: string) {

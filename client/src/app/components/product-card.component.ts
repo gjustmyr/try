@@ -47,7 +47,11 @@ import { CartService } from '../services/cart.service';
           }
         </div>
 
-        <button class="add-to-cart" [disabled]="product.quantity <= 0 || addingToCart" (click)="addToCart($event)">
+        <button
+          class="add-to-cart"
+          [disabled]="product.quantity <= 0 || addingToCart"
+          (click)="addToCart($event)"
+        >
           @if (addingToCart) {
             <i class="pi pi-spinner pi-spin"></i>
             Adding...
@@ -295,7 +299,12 @@ export class ProductCardComponent {
   addingToCart = false;
   cartAdded = false;
 
-  constructor(private router: Router, private authService: AuthService, private cartService: CartService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private cartService: CartService,
+    private cdr: ChangeDetectorRef,
+  ) {}
 
   goToProduct() {
     if (this.product?.id) {

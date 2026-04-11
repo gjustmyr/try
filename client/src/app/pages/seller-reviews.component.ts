@@ -76,8 +76,12 @@ import { SellerService } from '../services/seller.service';
                 <div class="reviews-average">
                   <div class="big-number">{{ reviewData.avgRating }}</div>
                   <div class="stars">
-                    @for (s of [1,2,3,4,5]; track s) {
-                      <i class="pi" [class.pi-star-fill]="s <= reviewData.avgRating" [class.pi-star]="s > reviewData.avgRating"></i>
+                    @for (s of [1, 2, 3, 4, 5]; track s) {
+                      <i
+                        class="pi"
+                        [class.pi-star-fill]="s <= reviewData.avgRating"
+                        [class.pi-star]="s > reviewData.avgRating"
+                      ></i>
                     }
                   </div>
                   <div class="total">{{ reviewData.total }} reviews</div>
@@ -88,7 +92,12 @@ import { SellerService } from '../services/seller.service';
                       <span class="label">{{ d.star }}</span>
                       <i class="pi pi-star-fill" style="color: #f59e0b; font-size: 12px;"></i>
                       <div class="bar">
-                        <div class="fill" [style.width.%]="reviewData.total > 0 ? (d.count / reviewData.total * 100) : 0"></div>
+                        <div
+                          class="fill"
+                          [style.width.%]="
+                            reviewData.total > 0 ? (d.count / reviewData.total) * 100 : 0
+                          "
+                        ></div>
                       </div>
                       <span class="count">{{ d.count }}</span>
                     </div>
@@ -101,7 +110,12 @@ import { SellerService } from '../services/seller.service';
             <div class="filters-bar" style="margin-bottom: 16px;">
               <div class="search-box">
                 <i class="pi pi-search"></i>
-                <input type="text" placeholder="Search reviews..." [(ngModel)]="searchQuery" (input)="onFilter()" />
+                <input
+                  type="text"
+                  placeholder="Search reviews..."
+                  [(ngModel)]="searchQuery"
+                  (input)="onFilter()"
+                />
               </div>
               <select class="filter-select" [(ngModel)]="ratingFilter" (change)="onFilter()">
                 <option value="">All Ratings</option>
@@ -133,12 +147,17 @@ import { SellerService } from '../services/seller.service';
                       <div class="customer-avatar"><i class="pi pi-user"></i></div>
                       <div>
                         <div class="name">{{ review.user?.fullName || 'Customer' }}</div>
-                        <div class="date">{{ review.createdAt | date:'MMM d, yyyy' }}</div>
+                        <div class="date">{{ review.createdAt | date: 'MMM d, yyyy' }}</div>
                       </div>
                     </div>
                     <div class="review-stars">
-                      @for (s of [1,2,3,4,5]; track s) {
-                        <i class="pi" [class.pi-star-fill]="s <= review.rating" [class.pi-star]="s > review.rating" [class.empty]="s > review.rating"></i>
+                      @for (s of [1, 2, 3, 4, 5]; track s) {
+                        <i
+                          class="pi"
+                          [class.pi-star-fill]="s <= review.rating"
+                          [class.pi-star]="s > review.rating"
+                          [class.empty]="s > review.rating"
+                        ></i>
                       }
                     </div>
                   </div>

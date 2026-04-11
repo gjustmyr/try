@@ -17,12 +17,16 @@ import * as L from 'leaflet';
           <div>
             <h1>Order Tracking</h1>
             <p class="sub" *ngIf="tracking">{{ tracking.trackingNumber }}</p>
-            <p class="sub" *ngIf="!tracking && orderData?.trackingNumber">{{ orderData.trackingNumber }}</p>
+            <p class="sub" *ngIf="!tracking && orderData?.trackingNumber">
+              {{ orderData.trackingNumber }}
+            </p>
           </div>
         </div>
       </header>
 
-      <div class="loading" *ngIf="loading"><i class="pi pi-spin pi-spinner"></i> Loading tracking info...</div>
+      <div class="loading" *ngIf="loading">
+        <i class="pi pi-spin pi-spinner"></i> Loading tracking info...
+      </div>
       <div class="error-box" *ngIf="error">{{ error }}</div>
 
       <!-- Delivery-based tracking (driver/hub) -->
@@ -34,11 +38,18 @@ import * as L from 'leaflet';
         <div class="info-panel">
           <!-- Status Timeline -->
           <div class="timeline">
-            <div class="tl-item" *ngFor="let step of timeline" [class.active]="step.active" [class.done]="step.done">
+            <div
+              class="tl-item"
+              *ngFor="let step of timeline"
+              [class.active]="step.active"
+              [class.done]="step.done"
+            >
               <div class="tl-dot"><i [class]="step.icon"></i></div>
               <div class="tl-content">
                 <span class="tl-label">{{ step.label }}</span>
-                <span class="tl-time" *ngIf="step.time">{{ step.time | date:'MMM d, h:mm a' }}</span>
+                <span class="tl-time" *ngIf="step.time">{{
+                  step.time | date: 'MMM d, h:mm a'
+                }}</span>
               </div>
             </div>
           </div>
@@ -46,39 +57,85 @@ import * as L from 'leaflet';
           <!-- Delivery Info -->
           <div class="detail-section">
             <h3>Delivery Details</h3>
-            <div class="detail-row"><span class="dl">Status</span><span class="dv"><span class="status-chip" [attr.data-status]="tracking.status">{{ formatStatus(tracking.status) }}</span></span></div>
-            <div class="detail-row" *ngIf="tracking.distanceKm"><span class="dl">Distance</span><span class="dv">{{ tracking.distanceKm | number:'1.1-1' }} km</span></div>
-            <div class="detail-row" *ngIf="tracking.estimatedDelivery"><span class="dl">Estimated Delivery</span><span class="dv eta">{{ tracking.estimatedDelivery | date:'MMM d, yyyy h:mm a' }}</span></div>
-            <div class="detail-row"><span class="dl">Destination</span><span class="dv">{{ tracking.destinationAddress }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Status</span
+              ><span class="dv"
+                ><span class="status-chip" [attr.data-status]="tracking.status">{{
+                  formatStatus(tracking.status)
+                }}</span></span
+              >
+            </div>
+            <div class="detail-row" *ngIf="tracking.distanceKm">
+              <span class="dl">Distance</span
+              ><span class="dv">{{ tracking.distanceKm | number: '1.1-1' }} km</span>
+            </div>
+            <div class="detail-row" *ngIf="tracking.estimatedDelivery">
+              <span class="dl">Estimated Delivery</span
+              ><span class="dv eta">{{
+                tracking.estimatedDelivery | date: 'MMM d, yyyy h:mm a'
+              }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Destination</span
+              ><span class="dv">{{ tracking.destinationAddress }}</span>
+            </div>
           </div>
 
           <!-- Driver Info -->
           <div class="detail-section" *ngIf="tracking.driver">
             <h3>Driver</h3>
-            <div class="detail-row"><span class="dl">Name</span><span class="dv">{{ tracking.driver.fullName }}</span></div>
-            <div class="detail-row"><span class="dl">Phone</span><span class="dv">{{ tracking.driver.phone }}</span></div>
-            <div class="detail-row"><span class="dl">Vehicle</span><span class="dv">{{ tracking.driver.vehicleType | titlecase }} &middot; {{ tracking.driver.plateNumber }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Name</span><span class="dv">{{ tracking.driver.fullName }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Phone</span><span class="dv">{{ tracking.driver.phone }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Vehicle</span
+              ><span class="dv"
+                >{{ tracking.driver.vehicleType | titlecase }} &middot;
+                {{ tracking.driver.plateNumber }}</span
+              >
+            </div>
           </div>
 
           <!-- Hub Info -->
           <div class="detail-section" *ngIf="tracking.hub">
             <h3>Origin Hub</h3>
-            <div class="detail-row"><span class="dl">Hub</span><span class="dv">{{ tracking.hub.name }}</span></div>
-            <div class="detail-row"><span class="dl">Address</span><span class="dv">{{ tracking.hub.address }}, {{ tracking.hub.city }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Hub</span><span class="dv">{{ tracking.hub.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Address</span
+              ><span class="dv">{{ tracking.hub.address }}, {{ tracking.hub.city }}</span>
+            </div>
           </div>
 
           <!-- Destination Hub Info -->
           <div class="detail-section" *ngIf="tracking.destinationHub">
             <h3>Destination Hub</h3>
-            <div class="detail-row"><span class="dl">Hub</span><span class="dv">{{ tracking.destinationHub.name }}</span></div>
-            <div class="detail-row"><span class="dl">Address</span><span class="dv">{{ tracking.destinationHub.address }}, {{ tracking.destinationHub.city }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Hub</span><span class="dv">{{ tracking.destinationHub.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Address</span
+              ><span class="dv"
+                >{{ tracking.destinationHub.address }}, {{ tracking.destinationHub.city }}</span
+              >
+            </div>
           </div>
 
           <!-- Order Info -->
           <div class="detail-section" *ngIf="tracking.order">
             <h3>Order</h3>
-            <div class="detail-row"><span class="dl">Order #</span><span class="dv mono">{{ tracking.order.orderNumber }}</span></div>
-            <div class="detail-row"><span class="dl">Total</span><span class="dv">₱{{ tracking.order.totalAmount | number:'1.2-2' }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Order #</span
+              ><span class="dv mono">{{ tracking.order.orderNumber }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Total</span
+              ><span class="dv">₱{{ tracking.order.totalAmount | number: '1.2-2' }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -90,21 +147,31 @@ import * as L from 'leaflet';
           <div class="map-header">
             <h3><i class="pi pi-map"></i> Shipping Route</h3>
             <div class="map-legend">
-              <span class="legend-item"><span class="legend-dot origin"></span> {{ getSellerName() }}</span>
+              <span class="legend-item"
+                ><span class="legend-dot origin"></span> {{ getSellerName() }}</span
+              >
               <span class="legend-item"><span class="legend-dot dest"></span> Your Address</span>
             </div>
           </div>
           <div id="orderTrackingMap" class="order-map"></div>
           <div class="map-footer" *ngIf="shippingDistance">
             <i class="pi pi-arrows-h"></i>
-            <span>Estimated distance: <strong>{{ shippingDistance | number:'1.1-1' }} km</strong></span>
+            <span
+              >Estimated distance:
+              <strong>{{ shippingDistance | number: '1.1-1' }} km</strong></span
+            >
           </div>
         </div>
 
         <div class="order-tracking-card">
           <!-- Order Status Timeline -->
           <div class="timeline">
-            <div class="tl-item" *ngFor="let step of orderTimeline" [class.active]="step.active" [class.done]="step.done">
+            <div
+              class="tl-item"
+              *ngFor="let step of orderTimeline"
+              [class.active]="step.active"
+              [class.done]="step.done"
+            >
               <div class="tl-dot"><i [class]="step.icon"></i></div>
               <div class="tl-content">
                 <span class="tl-label">{{ step.label }}</span>
@@ -113,20 +180,26 @@ import * as L from 'leaflet';
           </div>
 
           <!-- ETA Prediction Banner -->
-          <div class="eta-prediction" *ngIf="orderData.status !== 'delivered' && orderData.status !== 'cancelled'">
+          <div
+            class="eta-prediction"
+            *ngIf="orderData.status !== 'delivered' && orderData.status !== 'cancelled'"
+          >
             <div class="eta-icon-box" [attr.data-status]="orderData.status">
               <i [class]="getStatusIcon(orderData.status)"></i>
             </div>
             <div class="eta-text">
               <span class="eta-message">{{ getStatusMessage(orderData.status) }}</span>
               <span class="eta-date" *ngIf="orderData.estimatedDelivery">
-                Estimated arrival: <strong>{{ orderData.estimatedDelivery | date:'EEEE, MMMM d, yyyy' }}</strong>
+                Estimated arrival:
+                <strong>{{ orderData.estimatedDelivery | date: 'EEEE, MMMM d, yyyy' }}</strong>
                 <span class="eta-countdown">{{ getDaysUntil(orderData.estimatedDelivery) }}</span>
               </span>
             </div>
           </div>
           <div class="eta-prediction delivered" *ngIf="orderData.status === 'delivered'">
-            <div class="eta-icon-box" data-status="delivered"><i class="pi pi-check-circle"></i></div>
+            <div class="eta-icon-box" data-status="delivered">
+              <i class="pi pi-check-circle"></i>
+            </div>
             <div class="eta-text">
               <span class="eta-message">Your order has been delivered!</span>
             </div>
@@ -144,17 +217,40 @@ import * as L from 'leaflet';
           <!-- Order Details -->
           <div class="detail-section">
             <h3>Order Details</h3>
-            <div class="detail-row"><span class="dl">Order #</span><span class="dv mono">{{ orderData.orderNumber }}</span></div>
-            <div class="detail-row"><span class="dl">Status</span><span class="dv"><span class="status-chip" [attr.data-status]="orderData.status">{{ orderData.status | titlecase }}</span></span></div>
-            <div class="detail-row"><span class="dl">Total</span><span class="dv">₱{{ orderData.total | number:'1.2-2' }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Order #</span
+              ><span class="dv mono">{{ orderData.orderNumber }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Status</span
+              ><span class="dv"
+                ><span class="status-chip" [attr.data-status]="orderData.status">{{
+                  orderData.status | titlecase
+                }}</span></span
+              >
+            </div>
+            <div class="detail-row">
+              <span class="dl">Total</span
+              ><span class="dv">₱{{ orderData.total | number: '1.2-2' }}</span>
+            </div>
           </div>
 
           <!-- Delivery Address -->
           <div class="detail-section" *ngIf="orderData.address">
             <h3>Delivery Address</h3>
-            <div class="detail-row"><span class="dl">Name</span><span class="dv">{{ orderData.address.fullName }}</span></div>
-            <div class="detail-row"><span class="dl">Phone</span><span class="dv">{{ orderData.address.phone }}</span></div>
-            <div class="detail-row"><span class="dl">Address</span><span class="dv">{{ orderData.address.streetAddress }}, {{ orderData.address.barangay }}, {{ orderData.address.city }}, {{ orderData.address.province }}</span></div>
+            <div class="detail-row">
+              <span class="dl">Name</span><span class="dv">{{ orderData.address.fullName }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Phone</span><span class="dv">{{ orderData.address.phone }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="dl">Address</span
+              ><span class="dv"
+                >{{ orderData.address.streetAddress }}, {{ orderData.address.barangay }},
+                {{ orderData.address.city }}, {{ orderData.address.province }}</span
+              >
+            </div>
           </div>
 
           <!-- Items -->
@@ -163,184 +259,574 @@ import * as L from 'leaflet';
             <div class="tracking-item" *ngFor="let item of orderData.items">
               <div class="ti-img">
                 <img *ngIf="item.productImage?.url" [src]="item.productImage.url" />
-                <div *ngIf="!item.productImage?.url" class="ti-placeholder"><i class="pi pi-image"></i></div>
+                <div *ngIf="!item.productImage?.url" class="ti-placeholder">
+                  <i class="pi pi-image"></i>
+                </div>
               </div>
               <div class="ti-info">
                 <span class="ti-name">{{ item.productName }}</span>
                 <span class="ti-seller" *ngIf="item.seller">{{ item.seller.shopName }}</span>
               </div>
               <div class="ti-qty">x{{ item.quantity }}</div>
-              <div class="ti-price">₱{{ (item.price * item.quantity) | number:'1.2-2' }}</div>
+              <div class="ti-price">₱{{ item.price * item.quantity | number: '1.2-2' }}</div>
             </div>
           </div>
         </div>
       </div>
     </div>
   `,
-  styles: [`
-    .tracking-page { min-height: 100vh; background: #f9fafb; }
-    .tracking-header { background: white; border-bottom: 1px solid #e5e7eb; padding: 20px 24px; }
-    .header-inner { display: flex; align-items: center; gap: 16px; max-width: 1200px; margin: 0 auto; }
-    .back-btn { background: #f3f4f6; border: none; width: 40px; height: 40px; border-radius: 10px; font-size: 16px; cursor: pointer; color: #374151; display: flex; align-items: center; justify-content: center; }
-    .back-btn:hover { background: #e5e7eb; }
-    .tracking-header h1 { font-size: 20px; font-weight: 700; color: #1f2937; margin: 0; }
-    .sub { font-size: 13px; color: #6b7280; margin: 2px 0 0; font-family: monospace; }
+  styles: [
+    `
+      .tracking-page {
+        min-height: 100vh;
+        background: #f9fafb;
+      }
+      .tracking-header {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 20px 24px;
+      }
+      .header-inner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .back-btn {
+        background: #f3f4f6;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 16px;
+        cursor: pointer;
+        color: #374151;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .back-btn:hover {
+        background: #e5e7eb;
+      }
+      .tracking-header h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+      }
+      .sub {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 2px 0 0;
+        font-family: monospace;
+      }
 
-    .loading { text-align: center; padding: 60px 20px; color: #6b7280; font-size: 15px; }
-    .loading i { margin-right: 8px; }
-    .error-box { max-width: 600px; margin: 40px auto; padding: 20px; background: #fee2e2; color: #991b1b; border-radius: 10px; text-align: center; }
+      .loading {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+        font-size: 15px;
+      }
+      .loading i {
+        margin-right: 8px;
+      }
+      .error-box {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #fee2e2;
+        color: #991b1b;
+        border-radius: 10px;
+        text-align: center;
+      }
 
-    .tracking-body { display: grid; grid-template-columns: 1fr 420px; max-width: 1200px; margin: 0 auto; gap: 0; min-height: calc(100vh - 90px); }
-    .map-container { position: relative; }
-    .map { width: 100%; height: 100%; min-height: 500px; }
+      .tracking-body {
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        max-width: 1200px;
+        margin: 0 auto;
+        gap: 0;
+        min-height: calc(100vh - 90px);
+      }
+      .map-container {
+        position: relative;
+      }
+      .map {
+        width: 100%;
+        height: 100%;
+        min-height: 500px;
+      }
 
-    .info-panel { background: white; border-left: 1px solid #e5e7eb; padding: 24px; overflow-y: auto; max-height: calc(100vh - 90px); }
+      .info-panel {
+        background: white;
+        border-left: 1px solid #e5e7eb;
+        padding: 24px;
+        overflow-y: auto;
+        max-height: calc(100vh - 90px);
+      }
 
-    /* Timeline */
-    .timeline { display: flex; flex-direction: column; gap: 0; margin-bottom: 28px; position: relative; padding-left: 20px; }
-    .tl-item { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; position: relative; }
-    .tl-item::before { content: ''; position: absolute; left: -14px; top: 32px; bottom: -12px; width: 2px; background: #e5e7eb; }
-    .tl-item:last-child::before { display: none; }
-    .tl-item.done::before { background: #22c55e; }
-    .tl-dot { width: 28px; height: 28px; border-radius: 50%; background: #f3f4f6; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #9ca3af; position: relative; z-index: 1; flex-shrink: 0; border: 2px solid #e5e7eb; }
-    .tl-item.done .tl-dot { background: #dcfce7; color: #22c55e; border-color: #22c55e; }
-    .tl-item.active .tl-dot { background: #ff6b35; color: white; border-color: #ff6b35; animation: pulse 2s infinite; }
-    .tl-content { display: flex; flex-direction: column; }
-    .tl-label { font-size: 14px; font-weight: 600; color: #374151; }
-    .tl-item.active .tl-label { color: #ff6b35; }
-    .tl-time { font-size: 12px; color: #9ca3af; }
-    @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,53,0.4); } 50% { box-shadow: 0 0 0 8px rgba(255,107,53,0); } }
+      /* Timeline */
+      .timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin-bottom: 28px;
+        position: relative;
+        padding-left: 20px;
+      }
+      .tl-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 12px 0;
+        position: relative;
+      }
+      .tl-item::before {
+        content: '';
+        position: absolute;
+        left: -14px;
+        top: 32px;
+        bottom: -12px;
+        width: 2px;
+        background: #e5e7eb;
+      }
+      .tl-item:last-child::before {
+        display: none;
+      }
+      .tl-item.done::before {
+        background: #22c55e;
+      }
+      .tl-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        color: #9ca3af;
+        position: relative;
+        z-index: 1;
+        flex-shrink: 0;
+        border: 2px solid #e5e7eb;
+      }
+      .tl-item.done .tl-dot {
+        background: #dcfce7;
+        color: #22c55e;
+        border-color: #22c55e;
+      }
+      .tl-item.active .tl-dot {
+        background: #ff6b35;
+        color: white;
+        border-color: #ff6b35;
+        animation: pulse 2s infinite;
+      }
+      .tl-content {
+        display: flex;
+        flex-direction: column;
+      }
+      .tl-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: #374151;
+      }
+      .tl-item.active .tl-label {
+        color: #ff6b35;
+      }
+      .tl-time {
+        font-size: 12px;
+        color: #9ca3af;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 8px rgba(255, 107, 53, 0);
+        }
+      }
 
-    /* Detail Sections */
-    .detail-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #f3f4f6; }
-    .detail-section:last-child { border-bottom: none; }
-    .detail-section h3 { font-size: 14px; font-weight: 600; color: #1f2937; margin: 0 0 12px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; gap: 16px; }
-    .dl { color: #6b7280; flex-shrink: 0; }
-    .dv { color: #1f2937; font-weight: 500; text-align: right; }
-    .dv.eta { color: #ff6b35; font-weight: 600; }
-    .mono { font-family: monospace; font-weight: 600; }
+      /* Detail Sections */
+      .detail-section {
+        margin-bottom: 24px;
+        padding-bottom: 24px;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      .detail-section:last-child {
+        border-bottom: none;
+      }
+      .detail-section h3 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 12px;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 13px;
+        gap: 16px;
+      }
+      .dl {
+        color: #6b7280;
+        flex-shrink: 0;
+      }
+      .dv {
+        color: #1f2937;
+        font-weight: 500;
+        text-align: right;
+      }
+      .dv.eta {
+        color: #ff6b35;
+        font-weight: 600;
+      }
+      .mono {
+        font-family: monospace;
+        font-weight: 600;
+      }
 
-    .status-chip { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
-    .status-chip[data-status="assigned"] { background: #fef3c7; color: #92400e; }
-    .status-chip[data-status="picked_up"] { background: #dbeafe; color: #1e40af; }
-    .status-chip[data-status="in_transit"] { background: #e0e7ff; color: #3730a3; }
-    .status-chip[data-status="delivered"] { background: #dcfce7; color: #166534; }
-    .status-chip[data-status="failed"] { background: #fee2e2; color: #991b1b; }
+      .status-chip {
+        font-size: 12px;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 20px;
+      }
+      .status-chip[data-status='assigned'] {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-chip[data-status='picked_up'] {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .status-chip[data-status='in_transit'] {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .status-chip[data-status='delivered'] {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status-chip[data-status='failed'] {
+        background: #fee2e2;
+        color: #991b1b;
+      }
 
-    @media (max-width: 900px) {
-      .tracking-body { grid-template-columns: 1fr; }
-      .map { min-height: 350px; }
-      .info-panel { max-height: none; border-left: none; border-top: 1px solid #e5e7eb; }
-    }
+      @media (max-width: 900px) {
+        .tracking-body {
+          grid-template-columns: 1fr;
+        }
+        .map {
+          min-height: 350px;
+        }
+        .info-panel {
+          max-height: none;
+          border-left: none;
+          border-top: 1px solid #e5e7eb;
+        }
+      }
 
-    /* Order-based tracking */
-    .order-tracking-body { max-width: 700px; margin: 24px auto; padding: 0 16px; display: flex; flex-direction: column; gap: 20px; }
-    .order-tracking-card { background: white; border-radius: 16px; border: 1px solid #e5e7eb; padding: 32px; }
+      /* Order-based tracking */
+      .order-tracking-body {
+        max-width: 700px;
+        margin: 24px auto;
+        padding: 0 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .order-tracking-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        padding: 32px;
+      }
 
-    /* Shipping Map */
-    .shipping-map-card {
-      background: white; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden;
-    }
-    .map-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px 20px; border-bottom: 1px solid #f3f4f6;
-    }
-    .map-header h3 {
-      font-size: 15px; font-weight: 700; color: #1f2937; margin: 0;
-      display: flex; align-items: center; gap: 8px;
-    }
-    .map-header h3 i { color: #ff6b35; }
-    .map-legend { display: flex; gap: 16px; }
-    .legend-item {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; color: #6b7280; font-weight: 500;
-    }
-    .legend-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      border: 2px solid white; box-shadow: 0 0 0 1px rgba(0,0,0,0.15);
-    }
-    .legend-dot.origin { background: #ff6b35; }
-    .legend-dot.dest { background: #ef4444; }
-    .order-map { width: 100%; height: 350px; }
-    .map-footer {
-      display: flex; align-items: center; gap: 8px;
-      padding: 12px 20px; background: #f9fafb; border-top: 1px solid #f3f4f6;
-      font-size: 13px; color: #6b7280;
-    }
-    .map-footer i { color: #ff6b35; }
-    .map-footer strong { color: #1f2937; }
+      /* Shipping Map */
+      .shipping-map-card {
+        background: white;
+        border-radius: 16px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+      }
+      .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      .map-header h3 {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .map-header h3 i {
+        color: #ff6b35;
+      }
+      .map-legend {
+        display: flex;
+        gap: 16px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 500;
+      }
+      .legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+      }
+      .legend-dot.origin {
+        background: #ff6b35;
+      }
+      .legend-dot.dest {
+        background: #ef4444;
+      }
+      .order-map {
+        width: 100%;
+        height: 350px;
+      }
+      .map-footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #f9fafb;
+        border-top: 1px solid #f3f4f6;
+        font-size: 13px;
+        color: #6b7280;
+      }
+      .map-footer i {
+        color: #ff6b35;
+      }
+      .map-footer strong {
+        color: #1f2937;
+      }
 
-    .tracking-number-display {
-      display: flex; align-items: center; gap: 12px;
-      background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px;
-      padding: 16px 20px; font-size: 20px; font-weight: 700;
-      color: #5b21b6; font-family: monospace; letter-spacing: 1px;
-    }
-    .tracking-number-display i { font-size: 24px; color: #7c3aed; }
+      .tracking-number-display {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f5f3ff;
+        border: 1px solid #ddd6fe;
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-size: 20px;
+        font-weight: 700;
+        color: #5b21b6;
+        font-family: monospace;
+        letter-spacing: 1px;
+      }
+      .tracking-number-display i {
+        font-size: 24px;
+        color: #7c3aed;
+      }
 
-    .tracking-item {
-      display: flex; align-items: center; gap: 12px; padding: 10px;
-      background: #f9fafb; border-radius: 8px; margin-bottom: 8px;
-    }
-    .ti-img { width: 44px; height: 44px; border-radius: 6px; overflow: hidden; flex-shrink: 0; }
-    .ti-img img { width: 100%; height: 100%; object-fit: cover; }
-    .ti-placeholder {
-      width: 100%; height: 100%; background: #e5e7eb;
-      display: flex; align-items: center; justify-content: center; color: #9ca3af;
-    }
-    .ti-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-    .ti-name { font-size: 14px; font-weight: 500; color: #1f2937; }
-    .ti-seller { font-size: 12px; color: #6b7280; }
-    .ti-qty { font-size: 13px; color: #6b7280; width: 40px; text-align: center; }
-    .ti-price { font-size: 14px; font-weight: 600; color: #ff6b35; width: 90px; text-align: right; }
+      .tracking-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px;
+        background: #f9fafb;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+      .ti-img {
+        width: 44px;
+        height: 44px;
+        border-radius: 6px;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+      .ti-img img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .ti-placeholder {
+        width: 100%;
+        height: 100%;
+        background: #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+      }
+      .ti-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+      }
+      .ti-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1f2937;
+      }
+      .ti-seller {
+        font-size: 12px;
+        color: #6b7280;
+      }
+      .ti-qty {
+        font-size: 13px;
+        color: #6b7280;
+        width: 40px;
+        text-align: center;
+      }
+      .ti-price {
+        font-size: 14px;
+        font-weight: 600;
+        color: #ff6b35;
+        width: 90px;
+        text-align: right;
+      }
 
-    .status-chip[data-status="pending"] { background: #fef3c7; color: #92400e; }
-    .status-chip[data-status="confirmed"] { background: #dbeafe; color: #1e40af; }
-    .status-chip[data-status="processing"] { background: #e0e7ff; color: #3730a3; }
-    .status-chip[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
-    .status-chip[data-status="shipped"] { background: #fce7f3; color: #9d174d; }
-    .status-chip[data-status="received_at_hub"] { background: #ecfdf5; color: #065f46; }
-    .status-chip[data-status="in_transit"] { background: #e0e7ff; color: #3730a3; }
-    .status-chip[data-status="at_destination_hub"] { background: #fdf4ff; color: #86198f; }
-    .status-chip[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
-    .status-chip[data-status="delivered"] { background: #dcfce7; color: #166534; }
-    .status-chip[data-status="cancelled"] { background: #fee2e2; color: #991b1b; }
-    .status-chip[data-status="failed"] { background: #fee2e2; color: #991b1b; }
+      .status-chip[data-status='pending'] {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-chip[data-status='confirmed'] {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .status-chip[data-status='processing'] {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .status-chip[data-status='pending_drop_off'] {
+        background: #fff7ed;
+        color: #c2410c;
+      }
+      .status-chip[data-status='shipped'] {
+        background: #fce7f3;
+        color: #9d174d;
+      }
+      .status-chip[data-status='received_at_hub'] {
+        background: #ecfdf5;
+        color: #065f46;
+      }
+      .status-chip[data-status='in_transit'] {
+        background: #e0e7ff;
+        color: #3730a3;
+      }
+      .status-chip[data-status='at_destination_hub'] {
+        background: #fdf4ff;
+        color: #86198f;
+      }
+      .status-chip[data-status='out_for_delivery'] {
+        background: #f0fdf4;
+        color: #15803d;
+      }
+      .status-chip[data-status='delivered'] {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status-chip[data-status='cancelled'] {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .status-chip[data-status='failed'] {
+        background: #fee2e2;
+        color: #991b1b;
+      }
 
-    /* ETA Prediction Banner */
-    .eta-prediction {
-      display: flex; align-items: center; gap: 16px;
-      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-      border: 1px solid #fde68a; border-radius: 14px;
-      padding: 20px 24px; margin-bottom: 24px;
-    }
-    .eta-prediction.delivered {
-      background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%);
-      border-color: #a7f3d0;
-    }
-    .eta-icon-box {
-      width: 48px; height: 48px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; flex-shrink: 0;
-    }
-    .eta-icon-box[data-status="pending"] { background: #fef3c7; color: #d97706; }
-    .eta-icon-box[data-status="confirmed"] { background: #dbeafe; color: #2563eb; }
-    .eta-icon-box[data-status="processing"] { background: #e0e7ff; color: #4f46e5; }
-    .eta-icon-box[data-status="pending_drop_off"] { background: #fff7ed; color: #c2410c; }
-    .eta-icon-box[data-status="shipped"] { background: #fce7f3; color: #db2777; }
-    .eta-icon-box[data-status="out_for_delivery"] { background: #f0fdf4; color: #15803d; }
-    .eta-icon-box[data-status="delivered"] { background: #dcfce7; color: #16a34a; }
-    .eta-text { display: flex; flex-direction: column; gap: 4px; }
-    .eta-message { font-size: 15px; font-weight: 600; color: #1f2937; }
-    .eta-date { font-size: 14px; color: #4b5563; }
-    .eta-date strong { color: #1f2937; }
-    .eta-countdown {
-      display: inline-block; margin-left: 8px;
-      font-size: 13px; font-weight: 600; color: #ff6b35;
-      background: #fff7ed; padding: 2px 10px; border-radius: 20px;
-    }
-  `],
+      /* ETA Prediction Banner */
+      .eta-prediction {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        border: 1px solid #fde68a;
+        border-radius: 14px;
+        padding: 20px 24px;
+        margin-bottom: 24px;
+      }
+      .eta-prediction.delivered {
+        background: linear-gradient(135deg, #ecfdf5 0%, #dcfce7 100%);
+        border-color: #a7f3d0;
+      }
+      .eta-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+      .eta-icon-box[data-status='pending'] {
+        background: #fef3c7;
+        color: #d97706;
+      }
+      .eta-icon-box[data-status='confirmed'] {
+        background: #dbeafe;
+        color: #2563eb;
+      }
+      .eta-icon-box[data-status='processing'] {
+        background: #e0e7ff;
+        color: #4f46e5;
+      }
+      .eta-icon-box[data-status='pending_drop_off'] {
+        background: #fff7ed;
+        color: #c2410c;
+      }
+      .eta-icon-box[data-status='shipped'] {
+        background: #fce7f3;
+        color: #db2777;
+      }
+      .eta-icon-box[data-status='out_for_delivery'] {
+        background: #f0fdf4;
+        color: #15803d;
+      }
+      .eta-icon-box[data-status='delivered'] {
+        background: #dcfce7;
+        color: #16a34a;
+      }
+      .eta-text {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .eta-message {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .eta-date {
+        font-size: 14px;
+        color: #4b5563;
+      }
+      .eta-date strong {
+        color: #1f2937;
+      }
+      .eta-countdown {
+        display: inline-block;
+        margin-left: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #ff6b35;
+        background: #fff7ed;
+        padding: 2px 10px;
+        border-radius: 20px;
+      }
+    `,
+  ],
 })
 export class OrderTrackingComponent implements OnInit, OnDestroy {
   tracking: any = null;
@@ -439,7 +925,15 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
       { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'pi pi-truck' },
       { key: 'delivered', label: 'Delivered', icon: 'pi pi-home' },
     ];
-    const order = ['pending', 'confirmed', 'processing', 'pending_drop_off', 'shipped', 'out_for_delivery', 'delivered'];
+    const order = [
+      'pending',
+      'confirmed',
+      'processing',
+      'pending_drop_off',
+      'shipped',
+      'out_for_delivery',
+      'delivered',
+    ];
     const currentIdx = order.indexOf(status);
 
     this.orderTimeline = steps.map((s, i) => ({
@@ -449,7 +943,15 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
     }));
 
     if (status === 'cancelled') {
-      this.orderTimeline = [{ key: 'cancelled', label: 'Order Cancelled', icon: 'pi pi-times', done: false, active: true }];
+      this.orderTimeline = [
+        {
+          key: 'cancelled',
+          label: 'Order Cancelled',
+          icon: 'pi pi-times',
+          done: false,
+          active: true,
+        },
+      ];
     }
   }
 
@@ -457,14 +959,31 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
     if (!this.tracking) return;
     const status = this.tracking.status;
     const steps = [
-      { key: 'pending_drop_off', label: 'Awaiting Hub Drop-off', icon: 'pi pi-building', time: this.tracking.createdAt },
+      {
+        key: 'pending_drop_off',
+        label: 'Awaiting Hub Drop-off',
+        icon: 'pi pi-building',
+        time: this.tracking.createdAt,
+      },
       { key: 'received_at_hub', label: 'Received at Origin Hub', icon: 'pi pi-inbox', time: null },
       { key: 'in_transit', label: 'In Transit (Hub to Hub)', icon: 'pi pi-truck', time: null },
-      { key: 'at_destination_hub', label: 'At Destination Hub', icon: 'pi pi-map-marker', time: null },
+      {
+        key: 'at_destination_hub',
+        label: 'At Destination Hub',
+        icon: 'pi pi-map-marker',
+        time: null,
+      },
       { key: 'out_for_delivery', label: 'Out for Delivery', icon: 'pi pi-send', time: null },
       { key: 'delivered', label: 'Delivered', icon: 'pi pi-home', time: this.tracking.deliveredAt },
     ];
-    const order = ['pending_drop_off', 'received_at_hub', 'in_transit', 'at_destination_hub', 'out_for_delivery', 'delivered'];
+    const order = [
+      'pending_drop_off',
+      'received_at_hub',
+      'in_transit',
+      'at_destination_hub',
+      'out_for_delivery',
+      'delivered',
+    ];
     const currentIdx = order.indexOf(status);
 
     this.timeline = steps.map((s, i) => ({
@@ -474,7 +993,14 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
     }));
 
     if (status === 'failed') {
-      this.timeline.push({ key: 'failed', label: 'Delivery Failed', icon: 'pi pi-times', time: null, done: false, active: true });
+      this.timeline.push({
+        key: 'failed',
+        label: 'Delivery Failed',
+        icon: 'pi pi-times',
+        time: null,
+        done: false,
+        active: true,
+      });
     }
   }
 
@@ -528,7 +1054,10 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
       }
 
       // Route line
-      const lineCoords = [[driverLat, driverLng], [destLat, destLng]];
+      const lineCoords = [
+        [driverLat, driverLng],
+        [destLat, destLng],
+      ];
       if (this.routeLine) {
         this.routeLine.setLatLngs(lineCoords);
       } else {
@@ -541,13 +1070,16 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
       }
 
       // Fit both points
-      const bounds = L.latLngBounds([[driverLat, driverLng], [destLat, destLng]]);
+      const bounds = L.latLngBounds([
+        [driverLat, driverLng],
+        [destLat, destLng],
+      ]);
       this.map.fitBounds(bounds, { padding: [50, 50] });
     }
   }
 
   formatStatus(status: string): string {
-    return (status || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    return (status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   getStatusIcon(status: string): string {
@@ -642,22 +1174,35 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
       .bindPopup(`<b>Your Address</b><br>${addr.streetAddress}, ${addr.barangay}, ${addr.city}`);
 
     // Route line
-    L.polyline([[originLat, originLng], [destLat, destLng]], {
-      color: '#ff6b35',
-      weight: 3,
-      dashArray: '10, 8',
-      opacity: 0.8,
-    }).addTo(this.orderMap);
+    L.polyline(
+      [
+        [originLat, originLng],
+        [destLat, destLng],
+      ],
+      {
+        color: '#ff6b35',
+        weight: 3,
+        dashArray: '10, 8',
+        opacity: 0.8,
+      },
+    ).addTo(this.orderMap);
 
     // Fit bounds
-    const bounds = L.latLngBounds([[originLat, originLng], [destLat, destLng]]);
+    const bounds = L.latLngBounds([
+      [originLat, originLng],
+      [destLat, destLng],
+    ]);
     this.orderMap.fitBounds(bounds, { padding: [50, 50] });
 
     // Calculate distance (Haversine)
     const R = 6371;
-    const dLat = (destLat - originLat) * Math.PI / 180;
-    const dLng = (destLng - originLng) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 + Math.cos(originLat * Math.PI / 180) * Math.cos(destLat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    const dLat = ((destLat - originLat) * Math.PI) / 180;
+    const dLng = ((destLng - originLng) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos((originLat * Math.PI) / 180) *
+        Math.cos((destLat * Math.PI) / 180) *
+        Math.sin(dLng / 2) ** 2;
     this.shippingDistance = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     this.cdr.detectChanges();
   }

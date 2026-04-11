@@ -3,22 +3,22 @@ require("dotenv").config();
 
 // Create transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD,
-  },
+	host: process.env.EMAIL_HOST,
+	port: process.env.EMAIL_PORT,
+	secure: false,
+	auth: {
+		user: process.env.EMAIL_USER,
+		pass: process.env.EMAIL_PASSWORD,
+	},
 });
 
 // Send OTP verification email
 const sendOtpEmail = async (email, otp) => {
-  const mailOptions = {
-    from: `"MultiShop Marketplace" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Verify Your Email - OTP Code",
-    html: `
+	const mailOptions = {
+		from: `"MultiShop Marketplace" <${process.env.EMAIL_USER}>`,
+		to: email,
+		subject: "Verify Your Email - OTP Code",
+		html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -53,24 +53,24 @@ const sendOtpEmail = async (email, otp) => {
       </body>
       </html>
     `,
-  };
+	};
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("OTP email sent to:", email);
-  } catch (error) {
-    console.error("Error sending OTP email:", error);
-    throw new Error("Failed to send OTP email");
-  }
+	try {
+		await transporter.sendMail(mailOptions);
+		console.log("OTP email sent to:", email);
+	} catch (error) {
+		console.error("Error sending OTP email:", error);
+		throw new Error("Failed to send OTP email");
+	}
 };
 
 // Send approval notification email
 const sendApprovalEmail = async (email, shopName) => {
-  const mailOptions = {
-    from: `"MultiShop Marketplace" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Seller Application Approved - MultiShop",
-    html: `
+	const mailOptions = {
+		from: `"MultiShop Marketplace" <${process.env.EMAIL_USER}>`,
+		to: email,
+		subject: "Seller Application Approved - MultiShop",
+		html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -102,23 +102,23 @@ const sendApprovalEmail = async (email, shopName) => {
       </body>
       </html>
     `,
-  };
+	};
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("Approval email sent to:", email);
-  } catch (error) {
-    console.error("Error sending approval email:", error);
-  }
+	try {
+		await transporter.sendMail(mailOptions);
+		console.log("Approval email sent to:", email);
+	} catch (error) {
+		console.error("Error sending approval email:", error);
+	}
 };
 
 // Send rejection notification email
 const sendRejectionEmail = async (email, shopName, reason) => {
-  const mailOptions = {
-    from: `"MultiShop Marketplace" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Seller Application Update - MultiShop",
-    html: `
+	const mailOptions = {
+		from: `"MultiShop Marketplace" <${process.env.EMAIL_USER}>`,
+		to: email,
+		subject: "Seller Application Update - MultiShop",
+		html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -154,18 +154,18 @@ const sendRejectionEmail = async (email, shopName, reason) => {
       </body>
       </html>
     `,
-  };
+	};
 
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log("Rejection email sent to:", email);
-  } catch (error) {
-    console.error("Error sending rejection email:", error);
-  }
+	try {
+		await transporter.sendMail(mailOptions);
+		console.log("Rejection email sent to:", email);
+	} catch (error) {
+		console.error("Error sending rejection email:", error);
+	}
 };
 
 module.exports = {
-  sendOtpEmail,
-  sendApprovalEmail,
-  sendRejectionEmail,
+	sendOtpEmail,
+	sendApprovalEmail,
+	sendRejectionEmail,
 };

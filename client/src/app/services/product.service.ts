@@ -31,7 +31,9 @@ export class ProductService {
   }
 
   search(query: string, limit: number = 5): Observable<any> {
-    return this.http.get(`${this.apiUrl}/search`, { params: { q: query, limit: limit.toString() } });
+    return this.http.get(`${this.apiUrl}/search`, {
+      params: { q: query, limit: limit.toString() },
+    });
   }
 
   getProductPublic(productId: string): Observable<any> {

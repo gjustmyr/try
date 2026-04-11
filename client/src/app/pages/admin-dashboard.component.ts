@@ -422,16 +422,32 @@ import * as L from 'leaflet';
             <label>Province</label><input [(ngModel)]="hubForm.province" />
           </div>
           <div class="form-group">
-            <label>Latitude</label><input type="number" step="any" [(ngModel)]="hubForm.latitude" (change)="updateHubMapFromInput()" />
+            <label>Latitude</label
+            ><input
+              type="number"
+              step="any"
+              [(ngModel)]="hubForm.latitude"
+              (change)="updateHubMapFromInput()"
+            />
           </div>
           <div class="form-group">
             <label>Longitude</label>
-            <input type="number" step="any" [(ngModel)]="hubForm.longitude" (change)="updateHubMapFromInput()" />
+            <input
+              type="number"
+              step="any"
+              [(ngModel)]="hubForm.longitude"
+              (change)="updateHubMapFromInput()"
+            />
           </div>
           <div class="form-group"><label>Phone</label><input [(ngModel)]="hubForm.phone" /></div>
           <div class="form-group full">
-            <label><i class="pi pi-map-marker" style="color:#ff6b35"></i> Pin Location on Map</label>
-            <p class="map-hint">Click on the map to set the hub location. The pin and coordinates will update automatically.</p>
+            <label
+              ><i class="pi pi-map-marker" style="color:#ff6b35"></i> Pin Location on Map</label
+            >
+            <p class="map-hint">
+              Click on the map to set the hub location. The pin and coordinates will update
+              automatically.
+            </p>
             <div id="hubLocationMap" class="hub-map"></div>
           </div>
         </div>
@@ -499,14 +515,42 @@ import * as L from 'leaflet';
         <h3>Assign Delivery</h3>
         <div class="form-grid">
           <div class="form-group full">
-            <label>Order ID</label>
-            <input [(ngModel)]="assignForm.orderId" placeholder="Paste order UUID" />
+            <label>Search Order</label>
+            <input
+              [(ngModel)]="orderSearchQuery"
+              placeholder="Type order number..."
+              (input)="searchOrders()"
+              autocomplete="off"
+            />
+            <div class="search-results" *ngIf="orderSearchResults.length > 0 && !assignForm.orderId">
+              <div
+                class="search-result-item"
+                *ngFor="let o of orderSearchResults"
+                (click)="selectOrder(o)"
+              >
+                <span class="mono">{{ o.orderNumber }}</span>
+                <span class="result-meta">{{ o.user?.fullName }} — {{ o.status | titlecase }}</span>
+              </div>
+            </div>
+            <div class="search-no-results" *ngIf="orderSearchQuery.length >= 2 && orderSearchResults.length === 0 && !assignForm.orderId && !orderSearching">
+              No orders found
+            </div>
+            <div class="selected-order" *ngIf="selectedOrder">
+              <div class="selected-order-info">
+                <span class="mono">{{ selectedOrder.orderNumber }}</span>
+                <span>{{ selectedOrder.user?.fullName }}</span>
+                <span class="result-meta">{{ selectedOrder.address?.city }}, {{ selectedOrder.address?.province }}</span>
+              </div>
+              <button class="clear-btn" (click)="clearSelectedOrder()">
+                <i class="pi pi-times"></i>
+              </button>
+            </div>
           </div>
           <div class="form-group">
             <label>Hub</label>
             <select [(ngModel)]="assignForm.hubId">
               <option value="">Select hub</option>
-              <option *ngFor="let h of hubs" [value]="h.id">{{ h.name }}</option>
+              <option *ngFor="let h of hubs" [value]="h.id">{{ h.name }} — {{ h.city }}</option>
             </select>
           </div>
           <div class="form-group">
@@ -521,8 +565,8 @@ import * as L from 'leaflet';
         </div>
         <p class="error-msg" *ngIf="assignError">{{ assignError }}</p>
         <div class="modal-actions">
-          <button class="modal-btn secondary" (click)="showAssignModal = false">Cancel</button>
-          <button class="modal-btn primary" (click)="assignDelivery()" [disabled]="assigning">
+          <button class="modal-btn secondary" (click)="showAssignModal = false; clearAssignModal()">Cancel</button>
+          <button class="modal-btn primary" (click)="assignDelivery()" [disabled]="assigning || !assignForm.orderId">
             Assign
           </button>
         </div>
@@ -1019,6 +1063,61 @@ import * as L from 'leaflet';
         margin: 2px 0 0;
       }
 
+      /* Order Search */
+      .search-results {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        max-height: 180px;
+        overflow-y: auto;
+        margin-top: 4px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      }
+      .search-result-item {
+        padding: 10px 14px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 13px;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.1s;
+      }
+      .search-result-item:last-child { border-bottom: none; }
+      .search-result-item:hover { background: #fff7ed; }
+      .search-result-item .mono { font-weight: 600; color: #1f2937; }
+      .result-meta { font-size: 12px; color: #6b7280; }
+      .search-no-results {
+        font-size: 12px;
+        color: #9ca3af;
+        padding: 8px 0;
+      }
+      .selected-order {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-top: 6px;
+      }
+      .selected-order-info {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 13px;
+      }
+      .selected-order-info .mono { font-weight: 700; color: #166534; }
+      .clear-btn {
+        background: none;
+        border: none;
+        color: #dc2626;
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px;
+      }
+
       @media (max-width: 768px) {
         .stat-grid {
           grid-template-columns: 1fr 1fr;
@@ -1086,6 +1185,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   assignForm: any = { orderId: '', hubId: '', driverId: '' };
   assignError = '';
   assigning = false;
+  orderSearchQuery = '';
+  orderSearchResults: any[] = [];
+  selectedOrder: any = null;
+  orderSearching = false;
+  private searchTimeout: any = null;
 
   constructor(
     private router: Router,
@@ -1228,7 +1332,10 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
     const defaultLng = parseFloat(this.hubForm.longitude) || 120.9842;
     const hasCoords = !!(this.hubForm.latitude && this.hubForm.longitude);
 
-    this.hubMap = L.map('hubLocationMap', { zoomControl: true }).setView([defaultLat, defaultLng], hasCoords ? 15 : 6);
+    this.hubMap = L.map('hubLocationMap', { zoomControl: true }).setView(
+      [defaultLat, defaultLng],
+      hasCoords ? 15 : 6,
+    );
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(this.hubMap);
@@ -1408,8 +1515,55 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   resetAssignForm() {
     this.assignForm = { orderId: '', hubId: '', driverId: '' };
     this.assignError = '';
+    this.orderSearchQuery = '';
+    this.orderSearchResults = [];
+    this.selectedOrder = null;
+    this.orderSearching = false;
     if (this.drivers.length === 0) this.loadDrivers();
     if (this.hubs.length === 0) this.loadHubs();
+  }
+
+  searchOrders() {
+    const q = this.orderSearchQuery.trim();
+    if (q.length < 2) {
+      this.orderSearchResults = [];
+      return;
+    }
+    clearTimeout(this.searchTimeout);
+    this.orderSearching = true;
+    this.searchTimeout = setTimeout(() => {
+      this.adminService.searchOrders(q).subscribe({
+        next: (res: any) => {
+          this.orderSearching = false;
+          if (res.success) this.orderSearchResults = res.data;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.orderSearching = false;
+          this.orderSearchResults = [];
+          this.cdr.detectChanges();
+        },
+      });
+    }, 300);
+  }
+
+  selectOrder(order: any) {
+    this.selectedOrder = order;
+    this.assignForm.orderId = order.id;
+    this.orderSearchQuery = '';
+    this.orderSearchResults = [];
+    this.cdr.detectChanges();
+  }
+
+  clearSelectedOrder() {
+    this.selectedOrder = null;
+    this.assignForm.orderId = '';
+    this.orderSearchQuery = '';
+    this.orderSearchResults = [];
+  }
+
+  clearAssignModal() {
+    this.resetAssignForm();
   }
 
   assignDelivery() {

@@ -80,7 +80,10 @@ import { OrderService } from '../services/order.service';
 
               @if (showProfileDropdown) {
                 <div class="profile-dropdown" (click)="$event.stopPropagation()">
-                  <button class="dropdown-item" (click)="showProfileDropdown = false; showProfileModal = true; loadProfile()">
+                  <button
+                    class="dropdown-item"
+                    (click)="showProfileDropdown = false; showProfileModal = true; loadProfile()"
+                  >
                     <i class="pi pi-user-edit"></i> Update Profile
                   </button>
                   <div class="dropdown-divider"></div>
@@ -103,7 +106,7 @@ import { OrderService } from '../services/order.service';
               </div>
               <div class="stat-details">
                 <span class="stat-label">Total Revenue</span>
-                <h3 class="stat-value">₱{{ stats.totalRevenue | number:'1.2-2' }}</h3>
+                <h3 class="stat-value">₱{{ stats.totalRevenue | number: '1.2-2' }}</h3>
               </div>
             </div>
 
@@ -115,7 +118,9 @@ import { OrderService } from '../services/order.service';
                 <span class="stat-label">Total Orders</span>
                 <h3 class="stat-value">{{ stats.totalOrders }}</h3>
                 @if (stats.pendingOrders > 0) {
-                  <span class="stat-change warning"><i class="pi pi-clock"></i> {{ stats.pendingOrders }} pending</span>
+                  <span class="stat-change warning"
+                    ><i class="pi pi-clock"></i> {{ stats.pendingOrders }} pending</span
+                  >
                 }
               </div>
             </div>
@@ -174,9 +179,15 @@ import { OrderService } from '../services/order.service';
                           <td class="order-num">{{ order.orderNumber }}</td>
                           <td>{{ order.user?.fullName || 'Customer' }}</td>
                           <td>{{ order.items?.length }}</td>
-                          <td class="order-total">₱{{ getOrderSellerTotal(order) | number:'1.2-2' }}</td>
-                          <td><span class="status-badge" [attr.data-status]="order.status">{{ order.status | titlecase }}</span></td>
-                          <td class="order-date">{{ order.createdAt | date:'MMM d' }}</td>
+                          <td class="order-total">
+                            ₱{{ getOrderSellerTotal(order) | number: '1.2-2' }}
+                          </td>
+                          <td>
+                            <span class="status-badge" [attr.data-status]="order.status">{{
+                              order.status | titlecase
+                            }}</span>
+                          </td>
+                          <td class="order-date">{{ order.createdAt | date: 'MMM d' }}</td>
                         </tr>
                       }
                     </tbody>
@@ -214,11 +225,13 @@ import { OrderService } from '../services/order.service';
                         </div>
                         <div class="tp-info">
                           <span class="tp-name">{{ product.name }}</span>
-                          <span class="tp-price">₱{{ product.price | number:'1.2-2' }}</span>
+                          <span class="tp-price">₱{{ product.price | number: '1.2-2' }}</span>
                         </div>
                         <div class="tp-stats">
                           <span class="tp-sales">{{ product.sales || 0 }} sold</span>
-                          <span class="tp-stock" [class.low]="product.quantity < 10">{{ product.quantity }} in stock</span>
+                          <span class="tp-stock" [class.low]="product.quantity < 10"
+                            >{{ product.quantity }} in stock</span
+                          >
                         </div>
                       </div>
                     }
@@ -253,11 +266,19 @@ import { OrderService } from '../services/order.service';
             <div class="modal-body">
               <div class="form-group">
                 <label>Shop Name</label>
-                <input type="text" [(ngModel)]="profileForm.shopName" placeholder="Your shop name" />
+                <input
+                  type="text"
+                  [(ngModel)]="profileForm.shopName"
+                  placeholder="Your shop name"
+                />
               </div>
               <div class="form-group">
                 <label>Shop Description</label>
-                <textarea [(ngModel)]="profileForm.shopDescription" placeholder="Tell customers about your shop..." rows="4"></textarea>
+                <textarea
+                  [(ngModel)]="profileForm.shopDescription"
+                  placeholder="Tell customers about your shop..."
+                  rows="4"
+                ></textarea>
               </div>
               <div class="form-group">
                 <label>Phone</label>
@@ -265,7 +286,11 @@ import { OrderService } from '../services/order.service';
               </div>
               <div class="form-group">
                 <label>Business Address</label>
-                <textarea [(ngModel)]="profileForm.businessAddress" placeholder="Your business address" rows="3"></textarea>
+                <textarea
+                  [(ngModel)]="profileForm.businessAddress"
+                  placeholder="Your business address"
+                  rows="3"
+                ></textarea>
               </div>
             </div>
             <div class="modal-footer">
@@ -342,7 +367,10 @@ export class SellerDashboardComponent implements OnInit {
   }
 
   getOrderSellerTotal(order: any): number {
-    return (order.items || []).reduce((sum: number, item: any) => sum + (parseFloat(item.price) * item.quantity), 0);
+    return (order.items || []).reduce(
+      (sum: number, item: any) => sum + parseFloat(item.price) * item.quantity,
+      0,
+    );
   }
 
   loadProfile() {

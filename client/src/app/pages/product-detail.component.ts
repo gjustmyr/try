@@ -32,7 +32,8 @@ export class ProductDetailComponent implements OnInit {
       avatar: 'MS',
       rating: 5,
       date: '2026-04-05',
-      comment: 'Excellent product! Fast delivery and exactly as described. Very satisfied with my purchase.',
+      comment:
+        'Excellent product! Fast delivery and exactly as described. Very satisfied with my purchase.',
     },
     {
       id: 2,
@@ -174,12 +175,18 @@ export class ProductDetailComponent implements OnInit {
           this.cartMessage = res.message || 'Failed to add to cart';
         }
         this.cdr.detectChanges();
-        setTimeout(() => { this.cartMessage = ''; this.cdr.detectChanges(); }, 2000);
+        setTimeout(() => {
+          this.cartMessage = '';
+          this.cdr.detectChanges();
+        }, 2000);
       },
       error: (err: any) => {
         this.cartMessage = err.error?.message || 'Failed to add to cart';
         this.cdr.detectChanges();
-        setTimeout(() => { this.cartMessage = ''; this.cdr.detectChanges(); }, 2000);
+        setTimeout(() => {
+          this.cartMessage = '';
+          this.cdr.detectChanges();
+        }, 2000);
       },
     });
   }

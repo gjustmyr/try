@@ -174,7 +174,11 @@
             <div class="shop-card" (click)="goToShop(shop.id)">
               <div class="shop-logo-large">
                 @if (shop.shopLogo) {
-                  <img [src]="shop.shopLogo" [alt]="shop.shopName" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;" />
+                  <img
+                    [src]="shop.shopLogo"
+                    [alt]="shop.shopName"
+                    style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover"
+                  />
                 } @else {
                   <span>{{ getInitial(shop.shopName) }}</span>
                 }

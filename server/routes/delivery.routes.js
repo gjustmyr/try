@@ -7,6 +7,11 @@ const { authenticate, authorize } = require("../middleware/auth");
 router.get("/track", authenticate, deliveryController.getTracking);
 
 // Admin-only: assign delivery to driver
-router.post("/assign", authenticate, authorize("admin"), deliveryController.assignDelivery);
+router.post(
+	"/assign",
+	authenticate,
+	authorize("admin"),
+	deliveryController.assignDelivery,
+);
 
 module.exports = router;
