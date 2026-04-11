@@ -1,6 +1,4 @@
-const Wishlist = require("../models/wishlist.model");
-const Product = require("../models/product.model");
-const Seller = require("../models/seller.model");
+const { Wishlist, Product, Seller } = require("../models");
 
 // Get user's wishlist
 exports.getWishlist = async (req, res) => {
