@@ -8,6 +8,7 @@ const Review = require("./review.model");
 const DeliveryHub = require("./delivery-hub.model");
 const Driver = require("./driver.model");
 const Delivery = require("./delivery.model");
+const InventoryLog = require("./inventory-log.model");
 
 // Define associations
 User.hasOne(Seller, {
@@ -211,6 +212,34 @@ Delivery.belongsTo(DeliveryHub, {
   as: "destinationHub",
 });
 
+// Inventory Log associations
+Product.hasMany(InventoryLog, {
+  foreignKey: "productId",
+  as: "inventoryLogs",
+  onDelete: "CASCADE",
+});
+
+InventoryLog.belongsTo(Product, {
+  foreignKey: "productId",
+  as: "product",
+});
+
+Seller.hasMany(InventoryLog, {
+  foreignKey: "sellerId",
+  as: "inventoryLogs",
+  onDelete: "CASCADE",
+});
+
+InventoryLog.belongsTo(Seller, {
+  foreignKey: "sellerId",
+  as: "seller",
+});
+
+InventoryLog.belongsTo(Order, {
+  foreignKey: "orderId",
+  as: "order",
+});
+
 module.exports = {
   User,
   Seller,
@@ -223,4 +252,5 @@ module.exports = {
   DeliveryHub,
   Driver,
   Delivery,
+  InventoryLog,
 };

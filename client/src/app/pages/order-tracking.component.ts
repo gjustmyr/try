@@ -36,16 +36,23 @@ import * as L from 'leaflet';
           <!-- Route Info Overlay -->
           <div class="route-overlay" *ngIf="routeLabel">
             <div class="route-badge">
-              <i class="pi" [ngClass]="{
-                'pi-arrows-h': routeLabel === 'Hub to Hub Transfer',
-                'pi-truck': routeLabel === 'Last-Mile Delivery',
-                'pi-clock': routeLabel === 'Awaiting Rider Assignment'
-              }"></i>
+              <i
+                class="pi"
+                [ngClass]="{
+                  'pi-arrows-h': routeLabel === 'Hub to Hub Transfer',
+                  'pi-truck': routeLabel === 'Last-Mile Delivery',
+                  'pi-clock': routeLabel === 'Awaiting Rider Assignment',
+                }"
+              ></i>
               <span class="route-badge-label">{{ routeLabel }}</span>
             </div>
             <div class="route-stats" *ngIf="routeDistance > 0">
-              <span class="route-stat"><i class="pi pi-map"></i> {{ routeDistance | number: '1.1-1' }} km</span>
-              <span class="route-stat" *ngIf="routeEta"><i class="pi pi-clock"></i> {{ routeEta }}</span>
+              <span class="route-stat"
+                ><i class="pi pi-map"></i> {{ routeDistance | number: '1.1-1' }} km</span
+              >
+              <span class="route-stat" *ngIf="routeEta"
+                ><i class="pi pi-clock"></i> {{ routeEta }}</span
+              >
             </div>
           </div>
         </div>
@@ -85,8 +92,7 @@ import * as L from 'leaflet';
               ><span class="dv">{{ routeDistance | number: '1.1-1' }} km</span>
             </div>
             <div class="detail-row" *ngIf="routeEta">
-              <span class="dl">ETA</span
-              ><span class="dv eta">{{ routeEta }}</span>
+              <span class="dl">ETA</span><span class="dv eta">{{ routeEta }}</span>
             </div>
             <div class="detail-row" *ngIf="tracking.estimatedDelivery">
               <span class="dl">Estimated Delivery</span
@@ -108,8 +114,12 @@ import * as L from 'leaflet';
                 <span class="route-dot from"></span>
                 <div>
                   <span class="route-point-label">From</span>
-                  <span class="route-point-name" *ngIf="isHubToHub()">{{ tracking.hub?.name }}</span>
-                  <span class="route-point-name" *ngIf="!isHubToHub()">{{ tracking.destinationHub?.name || 'Hub' }}</span>
+                  <span class="route-point-name" *ngIf="isHubToHub()">{{
+                    tracking.hub?.name
+                  }}</span>
+                  <span class="route-point-name" *ngIf="!isHubToHub()">{{
+                    tracking.destinationHub?.name || 'Hub'
+                  }}</span>
                 </div>
               </div>
               <div class="route-line-indicator"></div>
@@ -117,7 +127,9 @@ import * as L from 'leaflet';
                 <span class="route-dot to"></span>
                 <div>
                   <span class="route-point-label">To</span>
-                  <span class="route-point-name" *ngIf="isHubToHub()">{{ tracking.destinationHub?.name }}</span>
+                  <span class="route-point-name" *ngIf="isHubToHub()">{{
+                    tracking.destinationHub?.name
+                  }}</span>
                   <span class="route-point-name" *ngIf="!isHubToHub()">Customer Address</span>
                 </div>
               </div>
@@ -150,7 +162,10 @@ import * as L from 'leaflet';
             </div>
             <div class="detail-row">
               <span class="dl">Address</span
-              ><span class="dv">{{ tracking.hub.address }}, {{ tracking.hub.city }}, {{ tracking.hub.province }}</span>
+              ><span class="dv"
+                >{{ tracking.hub.address }}, {{ tracking.hub.city }},
+                {{ tracking.hub.province }}</span
+              >
             </div>
           </div>
 
@@ -163,7 +178,8 @@ import * as L from 'leaflet';
             <div class="detail-row">
               <span class="dl">Address</span
               ><span class="dv"
-                >{{ tracking.destinationHub.address }}, {{ tracking.destinationHub.city }}, {{ tracking.destinationHub.province }}</span
+                >{{ tracking.destinationHub.address }}, {{ tracking.destinationHub.city }},
+                {{ tracking.destinationHub.province }}</span
               >
             </div>
           </div>
@@ -418,19 +434,21 @@ import * as L from 'leaflet';
         background: white;
         padding: 8px 14px;
         border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         font-size: 13px;
         font-weight: 600;
         color: #1f2937;
       }
-      .route-badge i { color: #ff6b35; }
+      .route-badge i {
+        color: #ff6b35;
+      }
       .route-stats {
         display: flex;
         gap: 12px;
         background: white;
         padding: 6px 14px;
         border-radius: 10px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
       .route-stat {
         display: flex;
@@ -440,7 +458,10 @@ import * as L from 'leaflet';
         font-weight: 600;
         color: #374151;
       }
-      .route-stat i { font-size: 12px; color: #ff6b35; }
+      .route-stat i {
+        font-size: 12px;
+        color: #ff6b35;
+      }
 
       /* Route Info Section in Panel */
       .route-info-section h3 {
@@ -448,7 +469,10 @@ import * as L from 'leaflet';
         align-items: center;
         gap: 8px;
       }
-      .route-info-section h3 i { color: #ff6b35; font-size: 14px; }
+      .route-info-section h3 i {
+        color: #ff6b35;
+        font-size: 14px;
+      }
       .route-from-to {
         display: flex;
         flex-direction: column;
@@ -467,10 +491,14 @@ import * as L from 'leaflet';
         border-radius: 50%;
         flex-shrink: 0;
         border: 2px solid white;
-        box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
       }
-      .route-dot.from { background: #6366f1; }
-      .route-dot.to { background: #ef4444; }
+      .route-dot.from {
+        background: #6366f1;
+      }
+      .route-dot.to {
+        background: #ef4444;
+      }
       .route-point-label {
         font-size: 11px;
         text-transform: uppercase;
@@ -1172,17 +1200,34 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
       this.routeLabel = 'Hub to Hub Transfer';
 
       if (hubLat && hubLng) {
-        this.originMarker = this.addMarker(hubLat, hubLng, '#6366f1', `<b>Origin Hub</b><br>${this.tracking.hub?.name || ''}`);
+        this.originMarker = this.addMarker(
+          hubLat,
+          hubLng,
+          '#6366f1',
+          `<b>Origin Hub</b><br>${this.tracking.hub?.name || ''}`,
+        );
       }
       if (destHubLat && destHubLng) {
-        this.destMarker = this.addMarker(destHubLat, destHubLng, '#8b5cf6', `<b>Destination Hub</b><br>${this.tracking.destinationHub?.name || ''}`);
+        this.destMarker = this.addMarker(
+          destHubLat,
+          destHubLng,
+          '#8b5cf6',
+          `<b>Destination Hub</b><br>${this.tracking.destinationHub?.name || ''}`,
+        );
       }
       if (driverLat && driverLng) {
-        this.driverMarker = this.addDriverMarker(driverLat, driverLng, this.tracking.driver?.fullName || 'Transfer Driver');
+        this.driverMarker = this.addDriverMarker(
+          driverLat,
+          driverLng,
+          this.tracking.driver?.fullName || 'Transfer Driver',
+        );
       }
       if (hubLat && hubLng && destHubLat && destHubLng) {
         this.fetchRouteWithEta([hubLat, hubLng], [destHubLat, destHubLng]);
-        const pts: [number, number][] = [[hubLat, hubLng], [destHubLat, destHubLng]];
+        const pts: [number, number][] = [
+          [hubLat, hubLng],
+          [destHubLat, destHubLng],
+        ];
         if (driverLat && driverLng) pts.push([driverLat, driverLng]);
         this.fitBounds(pts);
       }
@@ -1190,22 +1235,40 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
 
     // Phase 2: at_destination_hub / out_for_delivery / delivered → Dest Hub to Customer
     else if (['at_destination_hub', 'out_for_delivery', 'delivered'].includes(status)) {
-      this.routeLabel = status === 'at_destination_hub' ? 'Awaiting Rider Assignment' : 'Last-Mile Delivery';
+      this.routeLabel =
+        status === 'at_destination_hub' ? 'Awaiting Rider Assignment' : 'Last-Mile Delivery';
 
       if (destHubLat && destHubLng) {
-        this.originMarker = this.addMarker(destHubLat, destHubLng, '#8b5cf6', `<b>Destination Hub</b><br>${this.tracking.destinationHub?.name || ''}`);
+        this.originMarker = this.addMarker(
+          destHubLat,
+          destHubLng,
+          '#8b5cf6',
+          `<b>Destination Hub</b><br>${this.tracking.destinationHub?.name || ''}`,
+        );
       }
       if (destLat && destLng) {
-        this.destMarker = this.addMarker(destLat, destLng, '#ef4444', `<b>Delivery Address</b><br>${this.tracking.destinationAddress || ''}`);
+        this.destMarker = this.addMarker(
+          destLat,
+          destLng,
+          '#ef4444',
+          `<b>Delivery Address</b><br>${this.tracking.destinationAddress || ''}`,
+        );
       }
       if (driverLat && driverLng) {
-        this.driverMarker = this.addDriverMarker(driverLat, driverLng, this.tracking.driver?.fullName || 'Rider');
+        this.driverMarker = this.addDriverMarker(
+          driverLat,
+          driverLng,
+          this.tracking.driver?.fullName || 'Rider',
+        );
       }
       const fromLat = driverLat || destHubLat;
       const fromLng = driverLng || destHubLng;
       if (fromLat && fromLng && destLat && destLng) {
         this.fetchRouteWithEta([fromLat, fromLng], [destLat, destLng]);
-        const pts: [number, number][] = [[fromLat, fromLng], [destLat, destLng]];
+        const pts: [number, number][] = [
+          [fromLat, fromLng],
+          [destLat, destLng],
+        ];
         if (destHubLat && destHubLng && driverLat && driverLng) pts.push([destHubLat, destHubLng]);
         this.fitBounds(pts);
       }
@@ -1215,20 +1278,40 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
     else {
       this.routeLabel = '';
       if (hubLat && hubLng) {
-        this.originMarker = this.addMarker(hubLat, hubLng, '#6366f1', `<b>Origin Hub</b><br>${this.tracking.hub?.name || ''}`);
+        this.originMarker = this.addMarker(
+          hubLat,
+          hubLng,
+          '#6366f1',
+          `<b>Origin Hub</b><br>${this.tracking.hub?.name || ''}`,
+        );
       }
       if (destLat && destLng) {
-        this.destMarker = this.addMarker(destLat, destLng, '#ef4444', `<b>Destination</b><br>${this.tracking.destinationAddress || ''}`);
+        this.destMarker = this.addMarker(
+          destLat,
+          destLng,
+          '#ef4444',
+          `<b>Destination</b><br>${this.tracking.destinationAddress || ''}`,
+        );
         if (hubLat && hubLng) {
           this.fetchRouteWithEta([hubLat, hubLng], [destLat, destLng]);
-          this.fitBounds([[hubLat, hubLng], [destLat, destLng]]);
+          this.fitBounds([
+            [hubLat, hubLng],
+            [destLat, destLng],
+          ]);
         }
       }
     }
   }
 
   private clearMapLayers() {
-    [this.originMarker, this.destMarker, this.destHubMarker, this.driverMarker, this.hubMarker, this.routeLine].forEach(layer => {
+    [
+      this.originMarker,
+      this.destMarker,
+      this.destHubMarker,
+      this.driverMarker,
+      this.hubMarker,
+      this.routeLine,
+    ].forEach((layer) => {
       if (layer) this.map.removeLayer(layer);
     });
     this.originMarker = null;
@@ -1260,7 +1343,7 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
   }
 
   private fitBounds(points: [number, number][]) {
-    const bounds = L.latLngBounds(points.map(p => [p[0], p[1]]));
+    const bounds = L.latLngBounds(points.map((p) => [p[0], p[1]]));
     this.map.fitBounds(bounds, { padding: [50, 50] });
   }
 
@@ -1285,12 +1368,23 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
           }
 
           this.routeDistance = route.distance / 1000;
-          const durationMin = Math.round(route.duration / 60);
-          if (durationMin < 60) {
-            this.routeEta = `~${durationMin} min`;
+
+          // Calculate realistic ETA including delivery stops
+          const rawDurationMin = Math.round(route.duration / 60);
+          const baseHandlingMin = 10; // Base handling time
+          const timePerStopMin = 15; // Time per delivery stop
+
+          // Assume driver has other deliveries (you can get this from backend)
+          // For now, add buffer for typical multi-stop delivery
+          const deliveryBufferMin = 20; // Conservative buffer for parking, finding customer, handover
+
+          const realisticDurationMin = rawDurationMin + baseHandlingMin + deliveryBufferMin;
+
+          if (realisticDurationMin < 60) {
+            this.routeEta = `~${realisticDurationMin} min`;
           } else {
-            const hrs = Math.floor(durationMin / 60);
-            const mins = durationMin % 60;
+            const hrs = Math.floor(realisticDurationMin / 60);
+            const mins = realisticDurationMin % 60;
             this.routeEta = mins > 0 ? `~${hrs}h ${mins}m` : `~${hrs}h`;
           }
           this.cdr.detectChanges();

@@ -584,12 +584,28 @@ exports.assignRider = async (req, res) => {
       delivery.destinationLongitude,
     );
 
-    // Calculate ETA
+    // Calculate ETA considering driver's delivery queue
     const avgSpeedKmh = 30;
-    const handlingHours = 0.5;
-    const travelHours = (distanceKm || 5) / avgSpeedKmh;
+    const timePerStopMinutes = 15; // Time per delivery stop
+    const baseHandlingMinutes = 10;
+
+    // Check how many OTHER pending deliveries this driver has (excluding current one)
+    const pendingDeliveries = await Delivery.count({
+      where: {
+        driverId,
+        status: ["assigned", "picked_up", "in_transit"],
+        id: { [Op.ne]: delivery.id }, // Exclude current delivery
+      },
+      transaction: t,
+    });
+
+    // Calculate total time
+    let totalMinutes = baseHandlingMinutes;
+    totalMinutes += pendingDeliveries * timePerStopMinutes; // Time for OTHER deliveries
+    totalMinutes += ((distanceKm || 5) / avgSpeedKmh) * 60; // Travel time for THIS delivery
+
     const eta = new Date();
-    eta.setTime(eta.getTime() + (travelHours + handlingHours) * 60 * 60 * 1000);
+    eta.setTime(eta.getTime() + totalMinutes * 60 * 1000);
 
     await delivery.update(
       {
@@ -669,12 +685,10 @@ exports.regenerateQR = async (req, res) => {
         .json({ success: false, message: "Delivery not found" });
 
     if (!delivery.trackingNumber || !delivery.qrSecret) {
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Delivery missing tracking number or secret",
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Delivery missing tracking number or secret",
+      });
     }
 
     // Generate new QR code with correct format

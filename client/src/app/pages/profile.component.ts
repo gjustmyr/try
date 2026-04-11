@@ -230,6 +230,19 @@ import { OrderService } from '../services/order.service';
                         <span>Delivered</span>
                       </div>
                       <button
+                        class="rate-btn"
+                        *ngIf="order.status === 'delivered' && !order.hasReview"
+                        (click)="openRatingModal(order)"
+                      >
+                        <i class="pi pi-star"></i> Rate Order
+                      </button>
+                      <div
+                        class="rated-badge"
+                        *ngIf="order.status === 'delivered' && order.hasReview"
+                      >
+                        <i class="pi pi-star-fill"></i> Rated
+                      </div>
+                      <button
                         class="track-btn"
                         *ngIf="
                           order.status === 'shipped' ||
@@ -279,6 +292,88 @@ import { OrderService } from '../services/order.service';
         </div>
       </div>
     </div>
+
+    <!-- Rating Modal -->
+    <div class="modal-overlay" *ngIf="showRatingModal" (click)="closeRatingModal()">
+      <div class="modal-box rating-modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Rate Your Order</h3>
+          <button class="close-btn" (click)="closeRatingModal()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="rating-products">
+            <div class="rating-product-item" *ngFor="let item of ratingOrder?.items">
+              <img *ngIf="item.productImage" [src]="item.productImage.url" />
+              <div class="no-img" *ngIf="!item.productImage">
+                <i class="pi pi-image"></i>
+              </div>
+              <div class="product-info">
+                <div class="product-name">{{ item.productName }}</div>
+                <div class="product-qty">Qty: {{ item.quantity }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="rating-section">
+            <label>Your Rating</label>
+            <div class="star-rating">
+              <i
+                *ngFor="let star of [1, 2, 3, 4, 5]"
+                [class]="rating >= star ? 'pi pi-star-fill' : 'pi pi-star'"
+                (click)="setRating(star)"
+              ></i>
+            </div>
+          </div>
+
+          <div class="comment-section">
+            <label>Your Review (Optional)</label>
+            <textarea
+              [(ngModel)]="reviewComment"
+              placeholder="Share your experience with this order..."
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="image-upload-section">
+            <label>Add Photos (Optional)</label>
+            <div class="upload-area" (click)="fileInput.click()">
+              <i class="pi pi-cloud-upload"></i>
+              <p>Click to upload images</p>
+              <input
+                #fileInput
+                type="file"
+                accept="image/*"
+                multiple
+                (change)="onImageSelect($event)"
+                style="display: none"
+              />
+            </div>
+            <div class="image-previews" *ngIf="selectedImages.length > 0">
+              <div class="preview-item" *ngFor="let img of selectedImages; let i = index">
+                <img [src]="img.preview" />
+                <button class="remove-img" (click)="removeImage(i)">
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="cancel-btn" (click)="closeRatingModal()">Cancel</button>
+          <button
+            class="submit-btn"
+            (click)="submitRating()"
+            [disabled]="rating === 0 || submittingRating"
+          >
+            <i class="pi pi-spin pi-spinner" *ngIf="submittingRating"></i>
+            {{ submittingRating ? 'Submitting...' : 'Submit Review' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <app-footer></app-footer>
   `,
   styles: [
@@ -950,6 +1045,309 @@ import { OrderService } from '../services/order.service';
           align-items: flex-start;
         }
       }
+
+      /* Rating Modal */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 20px;
+      }
+      .modal-box {
+        background: white;
+        border-radius: 16px;
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .rate-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .rate-btn:hover {
+        background: #e55a28;
+      }
+      .rated-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        background: #fef3c7;
+        color: #92400e;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .rating-modal {
+        max-width: 600px;
+        width: 100%;
+      }
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e5e7eb;
+        flex-shrink: 0;
+      }
+      .modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .close-btn {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 4px;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s;
+      }
+      .close-btn:hover {
+        background: #f3f4f6;
+        color: #1f2937;
+      }
+      .modal-body {
+        padding: 24px;
+        overflow-y: auto;
+        flex: 1;
+      }
+      .rating-products {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 24px;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .rating-product-item {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .rating-product-item img,
+      .rating-product-item .no-img {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        object-fit: cover;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9ca3af;
+        flex-shrink: 0;
+      }
+      .product-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .product-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #1f2937;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .product-qty {
+        font-size: 13px;
+        color: #6b7280;
+      }
+      .rating-section {
+        margin-bottom: 20px;
+      }
+      .rating-section label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 8px;
+      }
+      .star-rating {
+        display: flex;
+        gap: 8px;
+      }
+      .star-rating i {
+        font-size: 32px;
+        color: #d1d5db;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .star-rating i.pi-star-fill {
+        color: #fbbf24;
+      }
+      .star-rating i:hover {
+        transform: scale(1.1);
+      }
+      .comment-section {
+        margin-bottom: 20px;
+      }
+      .comment-section label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 8px;
+      }
+      .comment-section textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        resize: vertical;
+        font-family: inherit;
+        box-sizing: border-box;
+        min-height: 100px;
+      }
+      .comment-section textarea:focus {
+        outline: none;
+        border-color: #ff6b35;
+      }
+      .image-upload-section {
+        margin-bottom: 20px;
+      }
+      .image-upload-section label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 8px;
+      }
+      .upload-area {
+        border: 2px dashed #d1d5db;
+        border-radius: 8px;
+        padding: 32px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .upload-area:hover {
+        border-color: #ff6b35;
+        background: #fff7f3;
+      }
+      .upload-area i {
+        font-size: 32px;
+        color: #9ca3af;
+        margin-bottom: 8px;
+        display: block;
+      }
+      .upload-area p {
+        margin: 0;
+        font-size: 14px;
+        color: #6b7280;
+      }
+      .image-previews {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .preview-item {
+        position: relative;
+        width: 100px;
+        height: 100px;
+      }
+      .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+      }
+      .remove-img {
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #ef4444;
+        color: white;
+        border: 2px solid white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+      }
+      .remove-img:hover {
+        background: #dc2626;
+      }
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        padding: 16px 24px;
+        border-top: 1px solid #e5e7eb;
+        flex-shrink: 0;
+      }
+      .cancel-btn {
+        padding: 10px 20px;
+        background: white;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .cancel-btn:hover {
+        background: #f3f4f6;
+      }
+      .submit-btn {
+        padding: 10px 20px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+      .submit-btn:hover:not(:disabled) {
+        background: #e55a28;
+      }
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
     `,
   ],
 })
@@ -972,6 +1370,14 @@ export class ProfileComponent implements OnInit {
     { key: 'delivered', label: 'Delivered' },
     { key: 'cancelled', label: 'Cancelled' },
   ];
+
+  // Rating modal
+  showRatingModal = false;
+  ratingOrder: any = null;
+  rating = 0;
+  reviewComment = '';
+  selectedImages: any[] = [];
+  submittingRating = false;
 
   constructor(
     private router: Router,
@@ -1086,5 +1492,87 @@ export class ProfileComponent implements OnInit {
 
   trackOrder(orderId: string) {
     this.router.navigate(['/track', orderId]);
+  }
+
+  openRatingModal(order: any) {
+    this.ratingOrder = order;
+    this.rating = 0;
+    this.reviewComment = '';
+    this.selectedImages = [];
+    this.showRatingModal = true;
+  }
+
+  closeRatingModal() {
+    this.showRatingModal = false;
+    this.ratingOrder = null;
+    this.rating = 0;
+    this.reviewComment = '';
+    this.selectedImages = [];
+  }
+
+  setRating(star: number) {
+    this.rating = star;
+  }
+
+  onImageSelect(event: any) {
+    const files = event.target.files;
+    if (files) {
+      for (let i = 0; i < Math.min(files.length, 5 - this.selectedImages.length); i++) {
+        const file = files[i];
+        const reader = new FileReader();
+        reader.onload = (e: any) => {
+          this.selectedImages.push({
+            file,
+            preview: e.target.result,
+          });
+          this.cdr.detectChanges();
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  }
+
+  removeImage(index: number) {
+    this.selectedImages.splice(index, 1);
+  }
+
+  submitRating() {
+    if (this.rating === 0 || !this.ratingOrder) return;
+
+    this.submittingRating = true;
+
+    const formData = new FormData();
+    formData.append('orderId', this.ratingOrder.id);
+    formData.append('rating', this.rating.toString());
+    if (this.reviewComment) {
+      formData.append('comment', this.reviewComment);
+    }
+
+    // Add images
+    this.selectedImages.forEach((img, index) => {
+      formData.append('images', img.file);
+    });
+
+    // Submit to first product in order (you can modify this to rate each product separately)
+    const firstItem = this.ratingOrder.items[0];
+    formData.append('productId', firstItem.productId);
+    formData.append('sellerId', firstItem.sellerId);
+
+    this.orderService.submitReview(formData).subscribe({
+      next: (res: any) => {
+        this.submittingRating = false;
+        if (res.success) {
+          this.closeRatingModal();
+          this.loadOrders(); // Reload to show rated status
+          alert('Thank you for your review!');
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.submittingRating = false;
+        alert('Failed to submit review. Please try again.');
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

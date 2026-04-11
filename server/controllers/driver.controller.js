@@ -117,7 +117,7 @@ exports.updateDeliveryStatus = async (req, res) => {
 
     if (status === "picked_up") {
       updates.pickedUpAt = new Date();
-      const eta = calculateETA(delivery.distanceKm);
+      const eta = await calculateETA(delivery.distanceKm, driver.id);
       updates.estimatedDelivery = eta;
       await delivery.order.update({
         status: "shipped",
@@ -280,7 +280,7 @@ exports.updateLocation = async (req, res) => {
         activeDelivery.destinationLatitude,
         activeDelivery.destinationLongitude,
       );
-      const newEta = calculateETA(remainingKm);
+      const newEta = await calculateETA(remainingKm, req.user.driverProfile.id);
       await activeDelivery.update({
         estimatedDelivery: newEta,
         distanceKm: remainingKm,
@@ -376,15 +376,54 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
-// Calculate ETA: assumes average speed of 30 km/h for local delivery
-// plus 30 mins handling buffer. Returns a Date.
-function calculateETA(distanceKm) {
+// Calculate ETA: considers multiple deliveries in queue
+// Assumes average speed of 30 km/h for local delivery
+// plus time per delivery stop (15 mins per parcel)
+async function calculateETA(
+  distanceKm,
+  driverId = null,
+  currentDeliveryId = null,
+) {
   const avgSpeedKmh = 30;
-  const handlingBufferHours = 0.5;
+  const timePerStopMinutes = 15; // Time to find customer, hand over parcel, get signature
+  const baseHandlingMinutes = 10; // Base handling time
+
+  let totalMinutes = baseHandlingMinutes;
+
+  // If driver is provided, check how many OTHER pending deliveries they have
+  if (driverId) {
+    try {
+      const { Delivery } = require("../models");
+      const { Op } = require("sequelize");
+
+      const where = {
+        driverId,
+        status: ["assigned", "picked_up", "in_transit"],
+      };
+
+      // Exclude current delivery if provided
+      if (currentDeliveryId) {
+        where.id = { [Op.ne]: currentDeliveryId };
+      }
+
+      const pendingDeliveries = await Delivery.count({ where });
+
+      // Add time for each OTHER pending delivery stop
+      // Each stop takes time to park, find customer, hand over, get signature
+      totalMinutes += pendingDeliveries * timePerStopMinutes;
+    } catch (error) {
+      console.error("Error calculating pending deliveries:", error);
+      // Continue with basic calculation if query fails
+    }
+  }
+
+  // Add travel time based on distance
   const travelHours = (distanceKm || 10) / avgSpeedKmh;
-  const totalHours = travelHours + handlingBufferHours;
+  totalMinutes += travelHours * 60;
+
+  // Create ETA date
   const eta = new Date();
-  eta.setTime(eta.getTime() + totalHours * 60 * 60 * 1000);
+  eta.setTime(eta.getTime() + totalMinutes * 60 * 1000);
   return eta;
 }
 

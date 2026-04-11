@@ -37,4 +37,8 @@ export class OrderService {
   getOrderTracking(orderId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/orders/${orderId}/tracking`);
   }
+
+  submitReview(formData: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/reviews`, formData);
+  }
 }
