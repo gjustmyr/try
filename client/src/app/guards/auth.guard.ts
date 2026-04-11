@@ -20,6 +20,9 @@ export const customerGuard: CanActivateFn = () => {
     case 'driver':
       router.navigate(['/driver']);
       return false;
+    case 'hub':
+      router.navigate(['/hub-dashboard']);
+      return false;
     default:
       return true;
   }
@@ -70,6 +73,23 @@ export const driverGuard: CanActivateFn = () => {
     return false;
   }
   if (user.userType !== 'driver') {
+    router.navigate(['/']);
+    return false;
+  }
+  return true;
+};
+
+/** Allows only hub users. */
+export const hubGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  const user = auth.getCurrentUser();
+
+  if (!user) {
+    router.navigate(['/login']);
+    return false;
+  }
+  if (user.userType !== 'hub') {
     router.navigate(['/']);
     return false;
   }

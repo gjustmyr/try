@@ -440,6 +440,31 @@ import * as L from 'leaflet';
             />
           </div>
           <div class="form-group"><label>Phone</label><input [(ngModel)]="hubForm.phone" /></div>
+
+          <!-- Account Credentials (only for new hubs) -->
+          <div
+            class="form-group full"
+            *ngIf="!editingHubId"
+            style="margin-top: 16px; padding-top: 16px; border-top: 2px solid #e5e7eb;"
+          >
+            <label
+              style="font-weight: 700; color: #ff6b35; display: flex; align-items: center; gap: 6px;"
+            >
+              <i class="pi pi-user"></i> Hub Account Credentials
+            </label>
+            <p style="font-size: 12px; color: #6b7280; margin: 4px 0 12px;">
+              Create login credentials for hub staff to access the hub dashboard
+            </p>
+          </div>
+          <div class="form-group" *ngIf="!editingHubId">
+            <label>Email <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="hubForm.email" type="email" placeholder="hub@example.com" />
+          </div>
+          <div class="form-group" *ngIf="!editingHubId">
+            <label>Password <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="hubForm.password" type="password" placeholder="Min. 6 characters" />
+          </div>
+
           <div class="form-group full">
             <label
               ><i class="pi pi-map-marker" style="color:#ff6b35"></i> Pin Location on Map</label
@@ -455,7 +480,7 @@ import * as L from 'leaflet';
         <div class="modal-actions">
           <button class="modal-btn secondary" (click)="closeHubModal()">Cancel</button>
           <button class="modal-btn primary" (click)="saveHub()" [disabled]="savingHub">
-            {{ editingHubId ? 'Update' : 'Create' }}
+            {{ editingHubId ? 'Update' : 'Create Hub & Account' }}
           </button>
         </div>
       </div>
@@ -522,7 +547,10 @@ import * as L from 'leaflet';
               (input)="searchOrders()"
               autocomplete="off"
             />
-            <div class="search-results" *ngIf="orderSearchResults.length > 0 && !assignForm.orderId">
+            <div
+              class="search-results"
+              *ngIf="orderSearchResults.length > 0 && !assignForm.orderId"
+            >
               <div
                 class="search-result-item"
                 *ngFor="let o of orderSearchResults"
@@ -532,14 +560,24 @@ import * as L from 'leaflet';
                 <span class="result-meta">{{ o.user?.fullName }} — {{ o.status | titlecase }}</span>
               </div>
             </div>
-            <div class="search-no-results" *ngIf="orderSearchQuery.length >= 2 && orderSearchResults.length === 0 && !assignForm.orderId && !orderSearching">
+            <div
+              class="search-no-results"
+              *ngIf="
+                orderSearchQuery.length >= 2 &&
+                orderSearchResults.length === 0 &&
+                !assignForm.orderId &&
+                !orderSearching
+              "
+            >
               No orders found
             </div>
             <div class="selected-order" *ngIf="selectedOrder">
               <div class="selected-order-info">
                 <span class="mono">{{ selectedOrder.orderNumber }}</span>
                 <span>{{ selectedOrder.user?.fullName }}</span>
-                <span class="result-meta">{{ selectedOrder.address?.city }}, {{ selectedOrder.address?.province }}</span>
+                <span class="result-meta"
+                  >{{ selectedOrder.address?.city }}, {{ selectedOrder.address?.province }}</span
+                >
               </div>
               <button class="clear-btn" (click)="clearSelectedOrder()">
                 <i class="pi pi-times"></i>
@@ -556,8 +594,14 @@ import * as L from 'leaflet';
         </div>
         <p class="error-msg" *ngIf="assignError">{{ assignError }}</p>
         <div class="modal-actions">
-          <button class="modal-btn secondary" (click)="showAssignModal = false; clearAssignModal()">Cancel</button>
-          <button class="modal-btn primary" (click)="assignDelivery()" [disabled]="assigning || !assignForm.orderId || !assignForm.hubId">
+          <button class="modal-btn secondary" (click)="showAssignModal = false; clearAssignModal()">
+            Cancel
+          </button>
+          <button
+            class="modal-btn primary"
+            (click)="assignDelivery()"
+            [disabled]="assigning || !assignForm.orderId || !assignForm.hubId"
+          >
             {{ assigning ? 'Receiving...' : 'Receive & Generate Tracking' }}
           </button>
         </div>
@@ -1062,7 +1106,7 @@ import * as L from 'leaflet';
         overflow-y: auto;
         margin-top: 4px;
         background: white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
       }
       .search-result-item {
         padding: 10px 14px;
@@ -1074,10 +1118,20 @@ import * as L from 'leaflet';
         border-bottom: 1px solid #f3f4f6;
         transition: background 0.1s;
       }
-      .search-result-item:last-child { border-bottom: none; }
-      .search-result-item:hover { background: #fff7ed; }
-      .search-result-item .mono { font-weight: 600; color: #1f2937; }
-      .result-meta { font-size: 12px; color: #6b7280; }
+      .search-result-item:last-child {
+        border-bottom: none;
+      }
+      .search-result-item:hover {
+        background: #fff7ed;
+      }
+      .search-result-item .mono {
+        font-weight: 600;
+        color: #1f2937;
+      }
+      .result-meta {
+        font-size: 12px;
+        color: #6b7280;
+      }
       .search-no-results {
         font-size: 12px;
         color: #9ca3af;
@@ -1099,7 +1153,10 @@ import * as L from 'leaflet';
         gap: 2px;
         font-size: 13px;
       }
-      .selected-order-info .mono { font-weight: 700; color: #166534; }
+      .selected-order-info .mono {
+        font-weight: 700;
+        color: #166534;
+      }
       .clear-btn {
         background: none;
         border: none;
@@ -1295,6 +1352,8 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
       latitude: '',
       longitude: '',
       phone: '',
+      email: '',
+      password: '',
     };
     this.hubError = '';
     this.destroyHubMap();
@@ -1385,6 +1444,21 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   saveHub() {
     this.savingHub = true;
     this.hubError = '';
+
+    // Validate required fields for new hubs
+    if (!this.editingHubId) {
+      if (!this.hubForm.email || !this.hubForm.password) {
+        this.hubError = 'Email and password are required for new hubs';
+        this.savingHub = false;
+        return;
+      }
+      if (this.hubForm.password.length < 6) {
+        this.hubError = 'Password must be at least 6 characters';
+        this.savingHub = false;
+        return;
+      }
+    }
+
     const obs = this.editingHubId
       ? this.adminService.updateHub(this.editingHubId, this.hubForm)
       : this.adminService.createHub(this.hubForm);
@@ -1394,6 +1468,11 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         if (res.success) {
           this.showHubModal = false;
           this.loadHubs();
+          if (!this.editingHubId) {
+            alert(
+              `Hub created successfully!\n\nLogin credentials:\nEmail: ${this.hubForm.email}\nPassword: ${this.hubForm.password}\n\nHub staff can now log in at the login page.`,
+            );
+          }
         } else this.hubError = res.message;
         this.cdr.detectChanges();
       },

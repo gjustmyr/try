@@ -3,38 +3,66 @@ const router = express.Router();
 const adminController = require("../controllers/admin.controller");
 const { authenticate, authorize } = require("../middleware/auth");
 
-// All admin routes require authentication and admin role
+// All routes require authentication
 router.use(authenticate);
-router.use(authorize("admin"));
 
-// Dashboard
-router.get("/dashboard", adminController.getDashboardStats);
+// Dashboard (admin only)
+router.get("/dashboard", authorize("admin"), adminController.getDashboardStats);
 
-// Seller management
-router.get("/sellers/pending", adminController.getPendingSellers);
-router.get("/sellers", adminController.getAllSellers);
-router.get("/sellers/:sellerId", adminController.getSellerDetail);
-router.put("/sellers/:sellerId/approve", adminController.approveSeller);
-router.put("/sellers/:sellerId/reject", adminController.rejectSeller);
+// Seller management (admin only)
+router.get(
+  "/sellers/pending",
+  authorize("admin"),
+  adminController.getPendingSellers,
+);
+router.get("/sellers", authorize("admin"), adminController.getAllSellers);
+router.get(
+  "/sellers/:sellerId",
+  authorize("admin"),
+  adminController.getSellerDetail,
+);
 router.put(
-	"/sellers/:sellerId/toggle-status",
-	adminController.toggleSellerStatus,
+  "/sellers/:sellerId/approve",
+  authorize("admin"),
+  adminController.approveSeller,
+);
+router.put(
+  "/sellers/:sellerId/reject",
+  authorize("admin"),
+  adminController.rejectSeller,
+);
+router.put(
+  "/sellers/:sellerId/toggle-status",
+  authorize("admin"),
+  adminController.toggleSellerStatus,
 );
 
-// Hub management
-router.get("/hubs", adminController.getHubs);
-router.post("/hubs", adminController.createHub);
-router.put("/hubs/:hubId", adminController.updateHub);
-router.delete("/hubs/:hubId", adminController.deleteHub);
+// Hub management (admin only)
+router.get("/hubs", authorize("admin"), adminController.getHubs);
+router.post("/hubs", authorize("admin"), adminController.createHub);
+router.put("/hubs/:hubId", authorize("admin"), adminController.updateHub);
+router.delete("/hubs/:hubId", authorize("admin"), adminController.deleteHub);
 
-// Driver management
-router.get("/drivers", adminController.getDrivers);
-router.post("/drivers", adminController.createDriver);
-router.put("/drivers/:driverId", adminController.updateDriver);
-router.delete("/drivers/:driverId", adminController.deleteDriver);
+// Driver management (admin and hub users)
+router.get("/drivers", authorize("admin", "hub"), adminController.getDrivers);
+router.post(
+  "/drivers",
+  authorize("admin", "hub"),
+  adminController.createDriver,
+);
+router.put(
+  "/drivers/:driverId",
+  authorize("admin", "hub"),
+  adminController.updateDriver,
+);
+router.delete(
+  "/drivers/:driverId",
+  authorize("admin", "hub"),
+  adminController.deleteDriver,
+);
 
-// Deliveries
-router.get("/deliveries", adminController.getAllDeliveries);
-router.get("/orders/search", adminController.searchOrders);
+// Deliveries (admin only)
+router.get("/deliveries", authorize("admin"), adminController.getAllDeliveries);
+router.get("/orders/search", authorize("admin"), adminController.searchOrders);
 
 module.exports = router;

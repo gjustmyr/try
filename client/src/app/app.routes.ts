@@ -20,7 +20,7 @@ import { AdminDashboardComponent } from './pages/admin-dashboard.component';
 import { DriverDashboardComponent } from './pages/driver-dashboard.component';
 import { OrderTrackingComponent } from './pages/order-tracking.component';
 import { HubDashboardComponent } from './pages/hub-dashboard.component';
-import { customerGuard, sellerGuard, adminGuard, driverGuard } from './guards/auth.guard';
+import { customerGuard, sellerGuard, adminGuard, driverGuard, hubGuard } from './guards/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent, canActivate: [customerGuard] },
@@ -41,7 +41,7 @@ export const routes: Routes = [
   { path: 'seller/reviews', component: SellerReviewsComponent, canActivate: [sellerGuard] },
   { path: 'seller/settings', component: SellerSettingsComponent, canActivate: [sellerGuard] },
   { path: 'admin', component: AdminDashboardComponent, canActivate: [adminGuard] },
-  { path: 'hub', component: HubDashboardComponent, canActivate: [adminGuard] },
+  { path: 'hub-dashboard', component: HubDashboardComponent, canActivate: [hubGuard] },
   { path: 'driver', component: DriverDashboardComponent, canActivate: [driverGuard] },
   { path: 'track/:orderId', component: OrderTrackingComponent, canActivate: [customerGuard] },
 ];

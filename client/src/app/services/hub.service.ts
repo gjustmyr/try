@@ -29,7 +29,8 @@ export class HubService {
   }
 
   dispatchToHub(deliveryId: string, driverId?: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/hub/parcels/${deliveryId}/dispatch`, { driverId });
+    const body = driverId ? { driverId } : {};
+    return this.http.put(`${this.apiUrl}/hub/parcels/${deliveryId}/dispatch`, body);
   }
 
   arriveAtHub(deliveryId: string): Observable<any> {

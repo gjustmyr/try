@@ -12,7 +12,7 @@ interface LoginResponse {
     user: {
       id: string;
       email: string;
-      userType: 'customer' | 'seller' | 'admin' | 'driver';
+      userType: 'customer' | 'seller' | 'admin' | 'driver' | 'hub';
       emailVerified: boolean;
     };
     seller?: {
@@ -20,6 +20,13 @@ interface LoginResponse {
       shopName: string;
       approvalStatus: string;
       isVerified: boolean;
+    };
+    hub?: {
+      id: string;
+      name: string;
+      address: string;
+      city: string;
+      province: string;
     };
   };
 }
@@ -51,8 +58,10 @@ export class AuthService {
           const userData = {
             ...response.data.user,
             seller: response.data.seller,
+            hub: response.data.hub,
           };
           localStorage.setItem('currentUser', JSON.stringify(userData));
+          localStorage.setItem('user', JSON.stringify(userData));
           this.currentUserSubject.next(userData);
         }
       }),

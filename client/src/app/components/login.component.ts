@@ -293,6 +293,8 @@ export class LoginComponent {
           this.router.navigate(['/admin']);
         } else if (userType === 'driver') {
           this.router.navigate(['/driver']);
+        } else if (userType === 'hub') {
+          this.router.navigate(['/hub-dashboard']);
         } else {
           this.router.navigate(['/']);
         }

@@ -17,7 +17,7 @@ import { HubService } from '../services/hub.service';
           <i class="pi pi-building"></i>
           <span>Hub Operations</span>
         </div>
-        <div class="hub-selector" *ngIf="hubs.length > 0">
+        <div class="hub-selector" *ngIf="hubs.length > 1">
           <label>Select Hub</label>
           <select [(ngModel)]="selectedHubId" (ngModelChange)="onHubChange()">
             <option value="">Choose a hub...</option>
@@ -69,9 +69,16 @@ import { HubService } from '../services/hub.service';
           >
             <i class="pi pi-send"></i> <span>Out for Delivery</span>
           </a>
+          <a
+            class="nav-item"
+            [class.active]="activeTab === 'drivers'"
+            (click)="activeTab = 'drivers'; loadDrivers()"
+          >
+            <i class="pi pi-car"></i> <span>Drivers</span>
+          </a>
         </nav>
         <div class="sidebar-footer">
-          <button class="back-btn" (click)="navigate('/admin')">
+          <button class="back-btn" (click)="navigate(isAdmin() ? '/admin' : '/')" *ngIf="isAdmin()">
             <i class="pi pi-arrow-left"></i> <span>Back to Admin</span>
           </button>
           <button class="logout-btn" (click)="logout()">
@@ -222,7 +229,130 @@ import { HubService } from '../services/hub.service';
             </div>
           </div>
         </div>
+
+        <!-- ============ DRIVERS TAB ============ -->
+        <div *ngIf="activeTab === 'drivers'" class="content-area">
+          <header class="section-header">
+            <h2>Drivers</h2>
+            <button class="primary-btn" (click)="openDriverModal()">
+              <i class="pi pi-plus"></i> Add Driver
+            </button>
+          </header>
+
+          <div class="loading-state" *ngIf="loadingDrivers">
+            <i class="pi pi-spin pi-spinner"></i>
+            <p>Loading drivers...</p>
+          </div>
+
+          <div class="drivers-grid" *ngIf="!loadingDrivers && drivers.length > 0">
+            <div class="driver-card" *ngFor="let driver of drivers">
+              <div class="driver-header">
+                <div class="driver-avatar">
+                  <i class="pi pi-user"></i>
+                </div>
+                <div class="driver-info">
+                  <h4>{{ driver.fullName }}</h4>
+                  <p class="driver-vehicle">
+                    {{ driver.vehicleType | titlecase }} - {{ driver.plateNumber }}
+                  </p>
+                </div>
+                <span
+                  class="status-badge"
+                  [class.active]="driver.isAvailable"
+                  [class.inactive]="!driver.isAvailable"
+                >
+                  {{ driver.isAvailable ? 'Available' : 'Busy' }}
+                </span>
+              </div>
+              <div class="driver-details">
+                <div class="detail-row">
+                  <i class="pi pi-phone"></i>
+                  <span>{{ driver.phone }}</span>
+                </div>
+                <div class="detail-row">
+                  <i class="pi pi-id-card"></i>
+                  <span>License: {{ driver.licenseNumber }}</span>
+                </div>
+                <div class="detail-row">
+                  <i class="pi pi-building"></i>
+                  <span>{{ driver.hub?.name || 'No hub assigned' }}</span>
+                </div>
+              </div>
+              <div class="driver-actions">
+                <button class="edit-btn" (click)="editDriver(driver)">
+                  <i class="pi pi-pencil"></i> Edit
+                </button>
+                <button class="toggle-btn" (click)="toggleDriverStatus(driver)">
+                  <i
+                    class="pi"
+                    [class.pi-check]="!driver.isActive"
+                    [class.pi-times]="driver.isActive"
+                  ></i>
+                  {{ driver.isActive ? 'Deactivate' : 'Activate' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state" *ngIf="!loadingDrivers && drivers.length === 0">
+            <i class="pi pi-car"></i>
+            <p>No drivers found. Add your first driver to get started.</p>
+          </div>
+        </div>
       </main>
+    </div>
+
+    <!-- Driver Modal -->
+    <div class="modal-overlay" *ngIf="showDriverModal">
+      <div class="modal-box form-modal">
+        <h3>{{ editingDriverId ? 'Edit Driver' : 'Add Driver' }}</h3>
+        <div class="form-grid">
+          <div class="form-group" *ngIf="!editingDriverId">
+            <label>Email <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="driverForm.email" type="email" placeholder="driver@example.com" />
+          </div>
+          <div class="form-group" *ngIf="!editingDriverId">
+            <label>Password <span style="color: #dc2626;">*</span></label>
+            <input
+              [(ngModel)]="driverForm.password"
+              type="password"
+              placeholder="Min. 6 characters"
+            />
+          </div>
+          <div class="form-group">
+            <label>Full Name <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="driverForm.fullName" placeholder="John Doe" />
+          </div>
+          <div class="form-group">
+            <label>Phone <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="driverForm.phone" placeholder="+63 912 345 6789" />
+          </div>
+          <div class="form-group">
+            <label>Vehicle Type <span style="color: #dc2626;">*</span></label>
+            <select [(ngModel)]="driverForm.vehicleType">
+              <option value="motorcycle">Motorcycle</option>
+              <option value="car">Car</option>
+              <option value="van">Van</option>
+              <option value="truck">Truck</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Plate Number <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="driverForm.plateNumber" placeholder="ABC 1234" />
+          </div>
+          <div class="form-group">
+            <label>License Number <span style="color: #dc2626;">*</span></label>
+            <input [(ngModel)]="driverForm.licenseNumber" placeholder="N01-12-345678" />
+          </div>
+        </div>
+        <p class="error-msg" *ngIf="driverError">{{ driverError }}</p>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" (click)="closeDriverModal()">Cancel</button>
+          <button class="modal-btn primary" (click)="saveDriver()" [disabled]="savingDriver">
+            {{ editingDriverId ? 'Update' : 'Create Driver' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Dispatch Modal -->
@@ -235,26 +365,13 @@ import { HubService } from '../services/hub.service';
         <p class="sub" *ngIf="dispatchParcel?.hubId === dispatchParcel?.destinationHubId">
           Same hub — will skip transit and mark as arrived.
         </p>
-        <div class="form-group" *ngIf="dispatchParcel?.hubId !== dispatchParcel?.destinationHubId">
-          <label>Select Transfer Driver</label>
-          <select [(ngModel)]="selectedDriverId">
-            <option value="">Choose driver...</option>
-            <option *ngFor="let d of availableDrivers" [value]="d.id">
-              {{ d.fullName }} — {{ d.vehicleType }} ({{ d.hub?.name || 'No hub' }})
-            </option>
-          </select>
-        </div>
+        <p class="sub" *ngIf="dispatchParcel?.hubId !== dispatchParcel?.destinationHubId">
+          Parcel will be marked as in transit to the destination hub. No driver assignment needed
+          for hub-to-hub transfers.
+        </p>
         <div class="modal-actions">
           <button class="modal-btn secondary" (click)="showDispatch = false">Cancel</button>
-          <button
-            class="modal-btn primary"
-            (click)="dispatchToHub()"
-            [disabled]="
-              dispatchParcel?.hubId !== dispatchParcel?.destinationHubId && !selectedDriverId
-            "
-          >
-            Dispatch
-          </button>
+          <button class="modal-btn primary" (click)="dispatchToHub()">Dispatch</button>
         </div>
       </div>
     </div>
@@ -265,7 +382,10 @@ import { HubService } from '../services/hub.service';
         <h3><i class="pi pi-user"></i> Assign Rider</h3>
         <p>
           Assign a rider for last-mile delivery to
-          <strong>{{ assignParcel?.order?.address?.streetAddress }}, {{ assignParcel?.order?.address?.city }}</strong>
+          <strong
+            >{{ assignParcel?.order?.address?.streetAddress }},
+            {{ assignParcel?.order?.address?.city }}</strong
+          >
         </p>
         <p class="sub" *ngIf="assignParcel?.order?.address?.province">
           {{ assignParcel?.order?.address?.barangay }}, {{ assignParcel?.order?.address?.province }}
@@ -304,7 +424,10 @@ import { HubService } from '../services/hub.service';
             autocomplete="off"
           />
         </div>
-        <div class="receive-results" *ngIf="receiveSearchResults.length > 0 && !receiveSelectedOrder">
+        <div
+          class="receive-results"
+          *ngIf="receiveSearchResults.length > 0 && !receiveSelectedOrder"
+        >
           <div
             class="receive-result-item"
             *ngFor="let o of receiveSearchResults"
@@ -312,15 +435,22 @@ import { HubService } from '../services/hub.service';
           >
             <div class="result-order-num">{{ o.orderNumber }}</div>
             <div class="result-meta">
-              {{ o.user?.fullName }} — {{ o.items?.length || 0 }} item(s) —
-              ₱{{ o.total }}
+              {{ o.user?.fullName }} — {{ o.items?.length || 0 }} item(s) — ₱{{ o.total }}
             </div>
             <div class="result-meta" *ngIf="o.address">
               {{ o.address.city }}, {{ o.address.province }}
             </div>
           </div>
         </div>
-        <div class="receive-no-results" *ngIf="receiveSearchQuery.length >= 2 && receiveSearchResults.length === 0 && !receiveSearching && !receiveSelectedOrder">
+        <div
+          class="receive-no-results"
+          *ngIf="
+            receiveSearchQuery.length >= 2 &&
+            receiveSearchResults.length === 0 &&
+            !receiveSearching &&
+            !receiveSelectedOrder
+          "
+        >
           No processing orders found.
         </div>
         <div class="receive-selected" *ngIf="receiveSelectedOrder">
@@ -859,8 +989,12 @@ import { HubService } from '../services/hub.service';
         border-bottom: 1px solid #f3f4f6;
         transition: background 0.1s;
       }
-      .receive-result-item:last-child { border-bottom: none; }
-      .receive-result-item:hover { background: #fff7ed; }
+      .receive-result-item:last-child {
+        border-bottom: none;
+      }
+      .receive-result-item:hover {
+        background: #fff7ed;
+      }
       .result-order-num {
         font-family: monospace;
         font-weight: 700;
@@ -905,11 +1039,202 @@ import { HubService } from '../services/hub.service';
         padding: 2px 6px;
         border-radius: 4px;
       }
-      .clear-btn:hover { color: #dc2626; background: #fee2e2; }
+      .clear-btn:hover {
+        color: #dc2626;
+        background: #fee2e2;
+      }
       .selected-details {
         font-size: 13px;
         color: #374151;
         line-height: 1.6;
+      }
+
+      /* Drivers Section */
+      .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+      .section-header h2 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+      }
+      .primary-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 20px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .primary-btn:hover {
+        background: #e55a28;
+      }
+      .drivers-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 16px;
+      }
+      .driver-card {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e5e7eb;
+        padding: 20px;
+        transition: box-shadow 0.2s;
+      }
+      .driver-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      }
+      .driver-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .driver-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #f3f4f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #6b7280;
+        font-size: 20px;
+      }
+      .driver-info {
+        flex: 1;
+      }
+      .driver-info h4 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 4px;
+      }
+      .driver-vehicle {
+        font-size: 13px;
+        color: #6b7280;
+        margin: 0;
+      }
+      .status-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+      .status-badge.active {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .status-badge.inactive {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      .driver-details {
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      .detail-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: #4b5563;
+        margin-bottom: 8px;
+      }
+      .detail-row:last-child {
+        margin-bottom: 0;
+      }
+      .detail-row i {
+        color: #9ca3af;
+        width: 16px;
+      }
+      .driver-actions {
+        display: flex;
+        gap: 8px;
+      }
+      .edit-btn,
+      .toggle-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.15s;
+      }
+      .edit-btn {
+        background: #f3f4f6;
+        color: #374151;
+      }
+      .edit-btn:hover {
+        background: #e5e7eb;
+      }
+      .toggle-btn {
+        background: #fef2f2;
+        color: #dc2626;
+      }
+      .toggle-btn:hover {
+        background: #fee2e2;
+      }
+      .form-modal {
+        max-width: 500px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-group.full {
+        grid-column: 1 / -1;
+      }
+      .form-group label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #374151;
+      }
+      .form-group input,
+      .form-group select {
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 14px;
+        background: white;
+      }
+      .form-group input:focus,
+      .form-group select:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+      }
+      .error-msg {
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 13px;
+        margin-bottom: 16px;
       }
 
       @media (max-width: 768px) {
@@ -960,6 +1285,23 @@ export class HubDashboardComponent implements OnInit {
   receiving = false;
   receiveSearchTimeout: any = null;
 
+  // Driver management state
+  drivers: any[] = [];
+  loadingDrivers = false;
+  showDriverModal = false;
+  editingDriverId = '';
+  driverForm: any = {
+    email: '',
+    password: '',
+    fullName: '',
+    phone: '',
+    vehicleType: 'motorcycle',
+    plateNumber: '',
+    licenseNumber: '',
+  };
+  driverError = '';
+  savingDriver = false;
+
   constructor(
     private router: Router,
     private authService: AuthService,
@@ -969,11 +1311,23 @@ export class HubDashboardComponent implements OnInit {
 
   ngOnInit() {
     const user = this.authService.getCurrentUser();
-    if (!user || user.userType !== 'admin') {
+    if (!user || (user.userType !== 'admin' && user.userType !== 'hub')) {
       this.router.navigate(['/login']);
       return;
     }
-    this.loadHubs();
+
+    // If hub user, get their hub from localStorage
+    if (user.userType === 'hub') {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      if (userData.hub) {
+        this.hubs = [userData.hub];
+        this.selectedHubId = userData.hub.id;
+        this.loadParcels();
+      }
+    } else {
+      // Admin can see all hubs
+      this.loadHubs();
+    }
   }
 
   loadHubs() {
@@ -1116,11 +1470,8 @@ export class HubDashboardComponent implements OnInit {
 
   showDispatchModal(p: any) {
     this.dispatchParcel = p;
-    this.selectedDriverId = '';
     this.showDispatch = true;
-    if (p.hubId !== p.destinationHubId) {
-      this.loadAvailableDrivers();
-    }
+    // No driver needed for hub-to-hub transfers
   }
 
   showAssignModal(p: any) {
@@ -1148,11 +1499,8 @@ export class HubDashboardComponent implements OnInit {
 
   dispatchToHub() {
     if (!this.dispatchParcel) return;
-    const driverId =
-      this.dispatchParcel.hubId !== this.dispatchParcel.destinationHubId
-        ? this.selectedDriverId
-        : undefined;
-    this.hubService.dispatchToHub(this.dispatchParcel.id, driverId).subscribe({
+    // No driver needed for hub-to-hub transfers
+    this.hubService.dispatchToHub(this.dispatchParcel.id).subscribe({
       next: (res: any) => {
         this.showDispatch = false;
         if (res.success) {
@@ -1209,5 +1557,164 @@ export class HubDashboardComponent implements OnInit {
 
   logout() {
     this.authService.logout();
+  }
+
+  isAdmin(): boolean {
+    const user = this.authService.getCurrentUser();
+    return user?.userType === 'admin';
+  }
+
+  // ============ DRIVER MANAGEMENT ============
+  loadDrivers() {
+    if (!this.selectedHubId) return;
+    this.loadingDrivers = true;
+    const token = localStorage.getItem('token');
+    fetch(`http://localhost:8000/api/admin/drivers`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        this.loadingDrivers = false;
+        if (res.success) {
+          // Filter drivers for this hub only
+          this.drivers = res.data.filter((d: any) => d.hubId === this.selectedHubId);
+        }
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.loadingDrivers = false;
+        this.cdr.detectChanges();
+      });
+  }
+
+  openDriverModal() {
+    this.editingDriverId = '';
+    this.driverForm = {
+      email: '',
+      password: '',
+      fullName: '',
+      phone: '',
+      vehicleType: 'motorcycle',
+      plateNumber: '',
+      licenseNumber: '',
+    };
+    this.driverError = '';
+    this.showDriverModal = true;
+  }
+
+  closeDriverModal() {
+    this.showDriverModal = false;
+    this.editingDriverId = '';
+    this.driverError = '';
+  }
+
+  editDriver(driver: any) {
+    this.editingDriverId = driver.id;
+    this.driverForm = {
+      fullName: driver.fullName,
+      phone: driver.phone,
+      vehicleType: driver.vehicleType,
+      plateNumber: driver.plateNumber,
+      licenseNumber: driver.licenseNumber,
+    };
+    this.driverError = '';
+    this.showDriverModal = true;
+  }
+
+  saveDriver() {
+    this.savingDriver = true;
+    this.driverError = '';
+
+    // Validate required fields
+    if (!this.editingDriverId) {
+      if (!this.driverForm.email || !this.driverForm.password) {
+        this.driverError = 'Email and password are required';
+        this.savingDriver = false;
+        return;
+      }
+      if (this.driverForm.password.length < 6) {
+        this.driverError = 'Password must be at least 6 characters';
+        this.savingDriver = false;
+        return;
+      }
+    }
+
+    if (
+      !this.driverForm.fullName ||
+      !this.driverForm.phone ||
+      !this.driverForm.plateNumber ||
+      !this.driverForm.licenseNumber
+    ) {
+      this.driverError = 'All fields are required';
+      this.savingDriver = false;
+      return;
+    }
+
+    const token = localStorage.getItem('token');
+    const payload = {
+      ...this.driverForm,
+      hubId: this.selectedHubId, // Assign to current hub
+    };
+
+    const url = this.editingDriverId
+      ? `http://localhost:8000/api/admin/drivers/${this.editingDriverId}`
+      : `http://localhost:8000/api/admin/drivers`;
+
+    const method = this.editingDriverId ? 'PUT' : 'POST';
+
+    fetch(url, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        this.savingDriver = false;
+        if (res.success) {
+          this.closeDriverModal();
+          this.loadDrivers();
+          if (!this.editingDriverId) {
+            alert(
+              `Driver created successfully!\n\nLogin credentials:\nEmail: ${this.driverForm.email}\nPassword: ${this.driverForm.password}`,
+            );
+          }
+        } else {
+          this.driverError = res.message || 'Failed to save driver';
+        }
+        this.cdr.detectChanges();
+      })
+      .catch((err) => {
+        this.savingDriver = false;
+        this.driverError = 'Failed to save driver';
+        this.cdr.detectChanges();
+      });
+  }
+
+  toggleDriverStatus(driver: any) {
+    const action = driver.isActive ? 'deactivate' : 'activate';
+    if (!confirm(`${action.charAt(0).toUpperCase() + action.slice(1)} driver ${driver.fullName}?`))
+      return;
+
+    const token = localStorage.getItem('token');
+    fetch(`http://localhost:8000/api/admin/drivers/${driver.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ isActive: !driver.isActive }),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success) {
+          this.loadDrivers();
+        } else {
+          alert(res.message || 'Failed to update driver');
+        }
+      })
+      .catch(() => alert('Failed to update driver'));
   }
 }
