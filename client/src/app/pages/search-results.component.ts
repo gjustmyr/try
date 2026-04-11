@@ -5,6 +5,7 @@ import { NavbarComponent } from '../components/navbar.component';
 import { FooterComponent } from '../components/footer.component';
 import { ProductCardComponent } from '../components/product-card.component';
 import { ProductService } from '../services/product.service';
+import { CATEGORIES } from '../data/categories';
 
 @Component({
   selector: 'app-search-results',
@@ -108,11 +109,41 @@ import { ProductService } from '../services/product.service';
         <!-- Products Section -->
         <div class="section" *ngIf="!loading && products.length > 0 && showProducts">
           <h3 class="section-title"><i class="pi pi-box"></i> Products</h3>
-          <div class="products-grid">
-            <app-product-card
-              *ngFor="let product of sortedProducts"
-              [product]="product"
-            ></app-product-card>
+
+          <div class="products-layout">
+            <!-- Category Filter Sidebar -->
+            <div class="category-filter">
+              <h4 class="filter-title">Categories</h4>
+              <div class="category-list">
+                <button
+                  class="category-item"
+                  [class.active]="selectedCategory === 'all'"
+                  (click)="filterByCategory('all')"
+                >
+                  <i class="pi pi-th-large"></i>
+                  <span>All</span>
+                  <span class="count">({{ allProducts.length }})</span>
+                </button>
+                <button
+                  *ngFor="let cat of categoriesWithProducts"
+                  class="category-item"
+                  [class.active]="selectedCategory === cat.id"
+                  (click)="filterByCategory(cat.id)"
+                >
+                  <i [class]="cat.icon"></i>
+                  <span>{{ cat.name }}</span>
+                  <span class="count">({{ getCategoryCount(cat.id) }})</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Products Grid -->
+            <div class="products-grid">
+              <app-product-card
+                *ngFor="let product of sortedProducts"
+                [product]="product"
+              ></app-product-card>
+            </div>
           </div>
         </div>
 
@@ -348,9 +379,86 @@ import { ProductService } from '../services/product.service';
       }
 
       /* Products Grid */
+      .products-layout {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        gap: 24px;
+      }
+
+      .category-filter {
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        padding: 20px;
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+      }
+
+      .filter-title {
+        font-size: 15px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 16px;
+      }
+
+      .category-list {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .category-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        width: 100%;
+      }
+
+      .category-item:hover {
+        background: #f9fafb;
+        color: #1f2937;
+      }
+
+      .category-item.active {
+        background: #fff5f2;
+        color: #ff6b35;
+        font-weight: 600;
+      }
+
+      .category-item i {
+        font-size: 16px;
+        width: 20px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+
+      .category-item span:first-of-type {
+        flex: 1;
+      }
+
+      .category-item .count {
+        font-size: 12px;
+        color: #9ca3af;
+        font-weight: 500;
+      }
+
+      .category-item.active .count {
+        color: #ff6b35;
+      }
+
       .products-grid {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
         gap: 16px;
       }
 
@@ -404,6 +512,14 @@ import { ProductService } from '../services/product.service';
           flex: 1;
         }
 
+        .products-layout {
+          grid-template-columns: 1fr;
+        }
+
+        .category-filter {
+          position: static;
+        }
+
         .products-grid {
           grid-template-columns: repeat(2, 1fr);
         }
@@ -424,10 +540,13 @@ import { ProductService } from '../services/product.service';
 export class SearchResultsComponent implements OnInit {
   query = '';
   products: any[] = [];
+  allProducts: any[] = []; // Store all products for filtering
   shops: any[] = [];
   loading = false;
   viewFilter: 'all' | 'products' | 'shops' = 'all';
   sortBy: string = 'relevance';
+  selectedCategory: string = 'all';
+  categories = CATEGORIES;
 
   constructor(
     private route: ActivatedRoute,
@@ -439,9 +558,41 @@ export class SearchResultsComponent implements OnInit {
   ngOnInit() {
     this.route.queryParams.subscribe((params) => {
       this.query = params['q'] || '';
-      if (this.query) {
+      const category = params['category'];
+      const deals = params['deals'];
+
+      if (category) {
+        // Load all products and filter by category
+        this.loadProductsByCategory(category);
+      } else if (deals) {
+        // Load products with deals/discounts
+        this.loadDeals();
+      } else if (this.query) {
         this.performSearch();
+      } else {
+        // No query - show all products
+        this.loadAllProducts();
       }
+    });
+  }
+
+  loadAllProducts() {
+    this.loading = true;
+    this.query = 'All Products';
+    this.productService.getAllProducts().subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          this.allProducts = res.data || [];
+          this.products = this.allProducts;
+          this.shops = [];
+        }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
     });
   }
 
@@ -461,6 +612,72 @@ export class SearchResultsComponent implements OnInit {
         this.cdr.detectChanges();
       },
     });
+  }
+
+  loadProductsByCategory(category: string) {
+    this.loading = true;
+    this.query = category === 'all' ? 'All Products' : category;
+    this.selectedCategory = category;
+    this.productService.getAllProducts().subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          this.allProducts = res.data || [];
+          if (category === 'all') {
+            this.products = this.allProducts;
+          } else {
+            this.products = this.allProducts.filter((p: any) => p.category === category);
+          }
+          this.shops = [];
+        }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  loadDeals() {
+    this.loading = true;
+    this.query = 'Flash Deals';
+    this.productService.getAllProducts().subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          this.allProducts = res.data || [];
+          // Filter products that have discounts or special pricing
+          this.products = this.allProducts.filter((p: any) => {
+            return p.discount > 0 || p.isOnSale || p.specialPrice;
+          });
+          this.shops = [];
+        }
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  filterByCategory(categoryId: string) {
+    this.selectedCategory = categoryId;
+    if (categoryId === 'all') {
+      this.products = this.allProducts;
+    } else {
+      this.products = this.allProducts.filter((p: any) => p.category === categoryId);
+    }
+    this.cdr.detectChanges();
+  }
+
+  getCategoryCount(categoryId: string): number {
+    return this.allProducts.filter((p: any) => p.category === categoryId).length;
+  }
+
+  get categoriesWithProducts() {
+    return this.categories.filter((cat) => this.getCategoryCount(cat.id) > 0);
   }
 
   goToShop(id: string) {

@@ -96,4 +96,12 @@ export class HomeComponent implements OnInit {
   navigateTo(path: string) {
     this.router.navigate([path]);
   }
+
+  viewAllCategories() {
+    this.router.navigate(['/search'], { queryParams: { category: 'all' } });
+  }
+
+  viewAllDeals() {
+    this.router.navigate(['/search'], { queryParams: { deals: 'true' } });
+  }
 }

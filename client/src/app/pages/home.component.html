@@ -23,7 +23,7 @@
           <span class="hero-badge">TOP RATED</span>
           <h2>BEST SELLERS</h2>
           <p>This week's most popular items</p>
-          <button class="shop-now-btn">
+          <button class="shop-now-btn" (click)="navigateTo('/search')">
             <span>Shop Now</span>
             <i class="pi pi-arrow-right"></i>
           </button>
@@ -37,7 +37,9 @@
     <div class="container">
       <div class="section-title">
         <h2>Shop by Category</h2>
-        <a class="view-all">View All <i class="pi pi-arrow-right"></i></a>
+        <a class="view-all" (click)="viewAllCategories()"
+          >View All <i class="pi pi-arrow-right"></i
+        ></a>
       </div>
       <div class="category-grid">
         @for (cat of categories; track cat.id) {
@@ -61,7 +63,7 @@
     <div class="container">
       <div class="section-title">
         <h2><i class="pi pi-bolt"></i> Flash Deals</h2>
-        <a class="view-all">View All <i class="pi pi-arrow-right"></i></a>
+        <a class="view-all" (click)="viewAllDeals()">View All <i class="pi pi-arrow-right"></i></a>
       </div>
       @if (isLoading) {
         <div class="loading-state">
@@ -92,7 +94,9 @@
             <span class="promo-tag">SPECIAL OFFER</span>
             <h3>Save Big on Electronics</h3>
             <p>Up to 50% off on selected items</p>
-            <button class="promo-btn">Shop Now <i class="pi pi-arrow-right"></i></button>
+            <button class="promo-btn" (click)="navigateTo('/search')">
+              Shop Now <i class="pi pi-arrow-right"></i>
+            </button>
           </div>
         </div>
         <div class="promo-card promo-small">
