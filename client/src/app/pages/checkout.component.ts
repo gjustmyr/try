@@ -214,18 +214,96 @@ L.Icon.Default.mergeOptions({
           <div class="summary-sidebar">
             <div class="summary-card">
               <h3>Order Summary</h3>
+
+              <!-- Coupon Section -->
+              <div class="coupon-section">
+                <div class="voucher-selector" *ngIf="appliedCoupons.length < 2">
+                  <button class="select-voucher-btn" (click)="openVoucherModal()">
+                    <i class="pi pi-ticket"></i>
+                    <span>Select Voucher</span>
+                    <span class="voucher-count" *ngIf="availableVouchers.length > 0">
+                      {{ availableVouchers.length }} available
+                    </span>
+                    <i class="pi pi-angle-right"></i>
+                  </button>
+                </div>
+
+                <div class="coupon-divider" *ngIf="appliedCoupons.length < 2">
+                  <span>or enter code</span>
+                </div>
+
+                <div class="coupon-input-group" *ngIf="appliedCoupons.length < 2">
+                  <input
+                    type="text"
+                    [(ngModel)]="couponCode"
+                    placeholder="Enter coupon code"
+                    class="coupon-input"
+                    (keyup.enter)="applyCoupon()"
+                  />
+                  <button
+                    class="apply-coupon-btn"
+                    (click)="applyCoupon()"
+                    [disabled]="validatingCoupon || !couponCode.trim()"
+                  >
+                    <i class="pi pi-spin pi-spinner" *ngIf="validatingCoupon"></i>
+                    <span *ngIf="!validatingCoupon">Apply</span>
+                  </button>
+                </div>
+
+                <!-- Display all applied coupons -->
+                <div class="applied-coupons-list" *ngIf="appliedCoupons.length > 0">
+                  <div class="applied-coupon" *ngFor="let applied of appliedCoupons; let i = index">
+                    <div class="coupon-badge">
+                      <i
+                        class="pi"
+                        [ngClass]="{
+                          'pi-percentage': applied.coupon.discountType === 'percentage',
+                          'pi-dollar': applied.coupon.discountType === 'fixed',
+                          'pi-truck': applied.coupon.discountType === 'free_shipping',
+                        }"
+                      ></i>
+                      <span>{{ applied.coupon.code }}</span>
+                    </div>
+                    <button class="remove-coupon" (click)="removeCoupon(i)">
+                      <i class="pi pi-times"></i>
+                    </button>
+                  </div>
+                  <p class="coupon-success">{{ appliedCoupons.length }} coupon(s) applied</p>
+                </div>
+
+                <p class="coupon-error" *ngIf="couponError">{{ couponError }}</p>
+              </div>
+
               <div class="summary-row">
                 <span>Subtotal ({{ totalQty }} item{{ totalQty > 1 ? 's' : '' }})</span>
                 <span>₱{{ subtotal | number: '1.2-2' }}</span>
               </div>
+
+              <!-- Tax is hidden from customer view (VAT-inclusive pricing) -->
+
+              <div class="summary-row discount" *ngIf="discountAmount > 0">
+                <span>Discount</span>
+                <span>-₱{{ discountAmount | number: '1.2-2' }}</span>
+              </div>
+
               <div class="summary-row">
                 <span>Shipping</span>
-                <span class="free">Free</span>
+                <span *ngIf="shippingDiscount > 0" class="shipping-discount">
+                  <span class="original-shipping">₱{{ shippingFee | number: '1.2-2' }}</span>
+                  <span class="discounted-shipping">₱{{ finalShippingFee | number: '1.2-2' }}</span>
+                </span>
+                <span *ngIf="shippingDiscount === 0 && finalShippingFee === 0" class="free"
+                  >Free</span
+                >
+                <span *ngIf="shippingDiscount === 0 && finalShippingFee > 0"
+                  >₱{{ finalShippingFee | number: '1.2-2' }}</span
+                >
               </div>
+
               <div class="divider"></div>
               <div class="summary-row total">
                 <span>Total</span>
-                <span>₱{{ subtotal | number: '1.2-2' }}</span>
+                <span>₱{{ total | number: '1.2-2' }}</span>
               </div>
               <div class="payment-method">
                 <div class="pm-label">Payment Method</div>
@@ -242,6 +320,65 @@ L.Icon.Default.mergeOptions({
               </button>
               <p class="error-msg" *ngIf="errorMsg">{{ errorMsg }}</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Voucher Modal -->
+    <div class="modal-overlay" *ngIf="showVoucherModal" (click)="closeVoucherModal()">
+      <div class="voucher-modal" (click)="$event.stopPropagation()">
+        <div class="voucher-modal-header">
+          <h3><i class="pi pi-ticket"></i> Select Voucher</h3>
+          <button class="close-modal-btn" (click)="closeVoucherModal()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+        <div class="voucher-modal-body">
+          <div class="voucher-info">
+            <p>
+              Order Total: <strong>₱{{ subtotal | number: '1.2-2' }}</strong>
+            </p>
+          </div>
+
+          <div class="voucher-list" *ngIf="!loadingVouchers">
+            <div class="no-vouchers" *ngIf="availableVouchers.length === 0">
+              <i class="pi pi-inbox"></i>
+              <p>No vouchers available for this order</p>
+            </div>
+
+            <div
+              class="voucher-item"
+              *ngFor="let voucher of availableVouchers"
+              (click)="selectVoucher(voucher)"
+            >
+              <div class="voucher-icon" [class]="voucher.discountType">
+                <i class="pi" [class]="getVoucherIcon(voucher.discountType)"></i>
+              </div>
+              <div class="voucher-details">
+                <div class="voucher-title">{{ getVoucherLabel(voucher) }}</div>
+                <div class="voucher-desc">{{ voucher.description }}</div>
+                <div class="voucher-conditions">
+                  <span *ngIf="voucher.minOrderAmount > 0">
+                    Min. spend: ₱{{ voucher.minOrderAmount }}
+                  </span>
+                  <span *ngIf="voucher.maxDiscountAmount">
+                    Max discount: ₱{{ voucher.maxDiscountAmount }}
+                  </span>
+                </div>
+                <div class="voucher-expiry">
+                  Valid until {{ voucher.validUntil | date: 'MMM d, yyyy' }}
+                </div>
+              </div>
+              <div class="voucher-action">
+                <button class="use-voucher-btn">Use</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="loading-vouchers" *ngIf="loadingVouchers">
+            <i class="pi pi-spin pi-spinner"></i>
+            <p>Loading vouchers...</p>
           </div>
         </div>
       </div>
@@ -675,6 +812,153 @@ L.Icon.Default.mergeOptions({
         color: #1f2937;
         margin: 0 0 20px;
       }
+
+      /* Coupon Section */
+      .coupon-section {
+        margin-bottom: 16px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .voucher-selector {
+        margin-bottom: 12px;
+      }
+      .select-voucher-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        background: linear-gradient(135deg, #ff6b35 0%, #ff8f65 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .select-voucher-btn:hover {
+        transform: translateY(-1px);
+      }
+      .select-voucher-btn i:first-child {
+        font-size: 18px;
+      }
+      .select-voucher-btn i:last-child {
+        margin-left: auto;
+      }
+      .voucher-count {
+        background: rgba(255, 255, 255, 0.25);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+      }
+      .coupon-divider {
+        text-align: center;
+        position: relative;
+        margin: 12px 0;
+      }
+      .coupon-divider::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1px;
+        background: #e5e7eb;
+      }
+      .coupon-divider span {
+        position: relative;
+        background: white;
+        padding: 0 12px;
+        font-size: 12px;
+        color: #9ca3af;
+      }
+      .coupon-input-group {
+        display: flex;
+        gap: 8px;
+      }
+      .coupon-input {
+        flex: 1;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        outline: none;
+        text-transform: uppercase;
+      }
+      .coupon-input:focus {
+        border-color: #ff6b35;
+      }
+      .apply-coupon-btn {
+        padding: 10px 20px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .apply-coupon-btn:hover:not(:disabled) {
+        background: #e55a28;
+      }
+      .apply-coupon-btn:disabled {
+        background: #d1d5db;
+        cursor: not-allowed;
+      }
+      .applied-coupons-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .applied-coupon {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 6px;
+      }
+      .coupon-badge {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: #065f46;
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .coupon-badge i {
+        color: #10b981;
+      }
+      .remove-coupon {
+        background: none;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        border-radius: 4px;
+      }
+      .remove-coupon:hover {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .coupon-error {
+        color: #dc2626;
+        font-size: 12px;
+        margin: 6px 0 0;
+      }
+      .coupon-success {
+        color: #059669;
+        font-size: 12px;
+        margin: 6px 0 0;
+      }
+
       .summary-row {
         display: flex;
         justify-content: space-between;
@@ -682,9 +966,29 @@ L.Icon.Default.mergeOptions({
         color: #4b5563;
         padding: 8px 0;
       }
+      .summary-row.discount {
+        color: #16a34a;
+      }
+      .summary-row.discount span:last-child {
+        font-weight: 600;
+      }
       .free {
         color: #16a34a;
         font-weight: 500;
+      }
+      .shipping-discount {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .original-shipping {
+        text-decoration: line-through;
+        color: #9ca3af;
+        font-size: 12px;
+      }
+      .discounted-shipping {
+        color: #16a34a;
+        font-weight: 600;
       }
       .divider {
         height: 1px;
@@ -836,6 +1140,167 @@ L.Icon.Default.mergeOptions({
         color: #d97706;
       }
 
+      /* Voucher Modal */
+      .voucher-modal {
+        background: white;
+        border-radius: 16px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .voucher-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .voucher-modal-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .voucher-modal-header h3 i {
+        color: #ff6b35;
+      }
+      .close-modal-btn {
+        background: none;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        border-radius: 4px;
+        font-size: 18px;
+      }
+      .close-modal-btn:hover {
+        background: #f3f4f6;
+        color: #1f2937;
+      }
+      .voucher-modal-body {
+        padding: 20px 24px;
+        overflow-y: auto;
+      }
+      .voucher-info {
+        background: #f9fafb;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        text-align: center;
+        font-size: 14px;
+        color: #6b7280;
+      }
+      .voucher-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .no-vouchers {
+        text-align: center;
+        padding: 40px 20px;
+        color: #9ca3af;
+      }
+      .no-vouchers i {
+        font-size: 48px;
+        color: #d1d5db;
+        margin-bottom: 12px;
+        display: block;
+      }
+      .voucher-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .voucher-item:hover {
+        border-color: #ff6b35;
+        background: #fff7f3;
+      }
+      .voucher-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 20px;
+        color: white;
+      }
+      .voucher-icon.percentage {
+        background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+      }
+      .voucher-icon.fixed {
+        background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
+      }
+      .voucher-icon.free_shipping {
+        background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+      }
+      .voucher-details {
+        flex: 1;
+        min-width: 0;
+      }
+      .voucher-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 4px;
+      }
+      .voucher-desc {
+        font-size: 13px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      .voucher-conditions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 11px;
+        color: #9ca3af;
+        margin-bottom: 4px;
+      }
+      .voucher-expiry {
+        font-size: 11px;
+        color: #f59e0b;
+      }
+      .voucher-action {
+        display: flex;
+        align-items: center;
+      }
+      .use-voucher-btn {
+        padding: 8px 16px;
+        background: #ff6b35;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .use-voucher-btn:hover {
+        background: #e55a28;
+      }
+      .loading-vouchers {
+        text-align: center;
+        padding: 40px 20px;
+        color: #9ca3af;
+      }
+      .loading-vouchers i {
+        font-size: 32px;
+        margin-bottom: 12px;
+        display: block;
+      }
+
       /* Map */
       .map-section {
         margin-top: 16px;
@@ -916,6 +1381,14 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   addresses: any[] = [];
   selectedAddressId = '';
   orderNotes = '';
+  couponCode = '';
+  appliedCoupons: any[] = []; // Changed to array for stacking
+  validatingCoupon = false;
+  couponError = '';
+  taxConfig: any = null;
+  availableVouchers: any[] = [];
+  showVoucherModal = false;
+  loadingVouchers = false;
   showAddressForm = false;
   editingAddress: any = null;
   savingAddress = false;
@@ -968,6 +1441,94 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       return;
     }
     this.loadAddresses();
+    this.loadTaxConfig();
+    this.loadAvailableVouchers();
+  }
+
+  loadTaxConfig() {
+    // Call tax API to get active tax configuration
+    fetch('http://localhost:8000/api/tax/active')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          this.taxConfig = data.data;
+          this.cdr.detectChanges();
+        }
+      })
+      .catch((err) => console.error('Failed to load tax config:', err));
+  }
+
+  loadAvailableVouchers() {
+    this.loadingVouchers = true;
+    fetch('http://localhost:8000/api/coupons/active')
+      .then((res) => res.json())
+      .then((data) => {
+        this.loadingVouchers = false;
+        if (data.success) {
+          this.availableVouchers = data.data.filter((v: any) => v.minOrderAmount <= this.subtotal);
+        }
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.loadingVouchers = false;
+        this.cdr.detectChanges();
+      });
+  }
+
+  openVoucherModal() {
+    this.showVoucherModal = true;
+  }
+
+  closeVoucherModal() {
+    this.showVoucherModal = false;
+  }
+
+  selectVoucher(voucher: any) {
+    // Check if we can add this voucher (stacking rules)
+    const hasShipping = this.appliedCoupons.some((c) => c.coupon.discountType === 'free_shipping');
+    const hasDiscount = this.appliedCoupons.some(
+      (c) => c.coupon.discountType === 'percentage' || c.coupon.discountType === 'fixed',
+    );
+
+    if (voucher.discountType === 'free_shipping' && hasShipping) {
+      alert('You can only use one free shipping voucher');
+      return;
+    }
+
+    if (
+      (voucher.discountType === 'percentage' || voucher.discountType === 'fixed') &&
+      hasDiscount
+    ) {
+      alert('You can only use one product discount voucher');
+      return;
+    }
+
+    this.couponCode = voucher.code;
+    this.applyCoupon();
+    this.closeVoucherModal();
+  }
+
+  getVoucherIcon(discountType: string): string {
+    switch (discountType) {
+      case 'percentage':
+        return 'pi-percentage';
+      case 'fixed':
+        return 'pi-dollar';
+      case 'free_shipping':
+        return 'pi-truck';
+      default:
+        return 'pi-tag';
+    }
+  }
+
+  getVoucherLabel(voucher: any): string {
+    if (voucher.discountType === 'percentage') {
+      return `${voucher.discountValue}% OFF`;
+    } else if (voucher.discountType === 'fixed') {
+      return `₱${voucher.discountValue} OFF`;
+    } else {
+      return 'FREE SHIPPING';
+    }
   }
 
   loadAddresses() {
@@ -991,8 +1552,117 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     );
   }
 
+  get taxAmount(): number {
+    if (!this.taxConfig || !this.taxConfig.rate) return 0;
+    // Extract tax from subtotal (VAT-inclusive)
+    // Formula: taxAmount = subtotal - (subtotal / (1 + rate/100))
+    return this.subtotal - this.subtotal / (1 + this.taxConfig.rate / 100);
+  }
+
+  get discountAmount(): number {
+    const discountCoupon = this.appliedCoupons.find(
+      (c) => c.coupon.discountType === 'percentage' || c.coupon.discountType === 'fixed',
+    );
+    return discountCoupon?.discountAmount || 0;
+  }
+
+  get shippingFee(): number {
+    return 50; // Base shipping fee
+  }
+
+  get shippingDiscount(): number {
+    const shippingCoupon = this.appliedCoupons.find(
+      (c) => c.coupon.discountType === 'free_shipping',
+    );
+    return shippingCoupon?.shippingDiscount || 0;
+  }
+
+  get finalShippingFee(): number {
+    return Math.max(0, this.shippingFee - this.shippingDiscount);
+  }
+
+  get total(): number {
+    // Subtotal already includes tax (VAT-inclusive)
+    return this.subtotal - this.discountAmount + this.finalShippingFee;
+  }
+
   get totalQty(): number {
     return this.checkoutItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
+  }
+
+  applyCoupon() {
+    if (!this.couponCode.trim()) {
+      this.couponError = 'Please enter a coupon code';
+      return;
+    }
+
+    // Check stacking rules
+    const hasShipping = this.appliedCoupons.some((c) => c.coupon.discountType === 'free_shipping');
+    const hasDiscount = this.appliedCoupons.some(
+      (c) => c.coupon.discountType === 'percentage' || c.coupon.discountType === 'fixed',
+    );
+
+    this.validatingCoupon = true;
+    this.couponError = '';
+    this.cdr.detectChanges();
+
+    const token = this.authService.getToken();
+    fetch('http://localhost:8000/api/coupons/validate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        code: this.couponCode,
+        cartTotal: this.subtotal,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        this.validatingCoupon = false;
+        if (data.success) {
+          const couponType = data.data.coupon.discountType;
+
+          // Check if already applied
+          if (this.appliedCoupons.some((c) => c.coupon.code === data.data.coupon.code)) {
+            this.couponError = 'This coupon is already applied';
+            this.cdr.detectChanges();
+            return;
+          }
+
+          // Check stacking limits
+          if (couponType === 'free_shipping' && hasShipping) {
+            this.couponError = 'You can only use one free shipping voucher';
+            this.cdr.detectChanges();
+            return;
+          }
+
+          if ((couponType === 'percentage' || couponType === 'fixed') && hasDiscount) {
+            this.couponError = 'You can only use one product discount voucher';
+            this.cdr.detectChanges();
+            return;
+          }
+
+          // Add to applied coupons
+          this.appliedCoupons.push(data.data);
+          this.couponCode = '';
+          this.couponError = '';
+        } else {
+          this.couponError = data.message || 'Invalid coupon code';
+        }
+        this.cdr.detectChanges();
+      })
+      .catch(() => {
+        this.validatingCoupon = false;
+        this.couponError = 'Failed to validate coupon';
+        this.cdr.detectChanges();
+      });
+  }
+
+  removeCoupon(index: number) {
+    this.appliedCoupons.splice(index, 1);
+    this.cdr.detectChanges();
   }
 
   saveAddress() {
@@ -1217,11 +1887,15 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.placingOrder = true;
     const cartItemIds = this.checkoutItems.map((item: any) => item.id);
 
+    // Collect all applied coupon codes
+    const couponCodes = this.appliedCoupons.map((c) => c.coupon.code);
+
     this.orderService
       .placeOrder({
         addressId: this.selectedAddressId,
         cartItemIds,
         notes: this.orderNotes || undefined,
+        couponCode: couponCodes.length > 0 ? couponCodes : undefined,
       })
       .subscribe({
         next: (res: any) => {

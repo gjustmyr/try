@@ -11,7 +11,12 @@ export class OrderService {
 
   constructor(private http: HttpClient) {}
 
-  placeOrder(data: { addressId: string; cartItemIds: string[]; notes?: string }): Observable<any> {
+  placeOrder(data: {
+    addressId: string;
+    cartItemIds: string[];
+    notes?: string;
+    couponCode?: string | string[]; // Support both single code and array
+  }): Observable<any> {
     return this.http.post(`${this.apiUrl}/orders`, data);
   }
 

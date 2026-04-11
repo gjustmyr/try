@@ -83,10 +83,46 @@ export class AdminService {
   }
 
   assignDelivery(data: { orderId: string; hubId: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/hub/${data.hubId}/receive-order`, { orderId: data.orderId });
+    return this.http.post(`${this.apiUrl}/hub/${data.hubId}/receive-order`, {
+      orderId: data.orderId,
+    });
   }
 
   searchOrders(query: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/admin/orders/search?q=${encodeURIComponent(query)}`);
+  }
+
+  // Coupons
+  getAllCoupons(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/coupons`);
+  }
+
+  createCoupon(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/coupons`, data);
+  }
+
+  updateCoupon(couponId: string, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/coupons/${couponId}`, data);
+  }
+
+  deleteCoupon(couponId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/coupons/${couponId}`);
+  }
+
+  // Tax
+  getAllTaxConfigs(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/tax`);
+  }
+
+  createTaxConfig(data: any): Observable<any> {
+    return this.http.post(`${this.apiUrl}/tax`, data);
+  }
+
+  updateTaxConfig(taxId: string, data: any): Observable<any> {
+    return this.http.put(`${this.apiUrl}/tax/${taxId}`, data);
+  }
+
+  deleteTaxConfig(taxId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/tax/${taxId}`);
   }
 }

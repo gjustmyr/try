@@ -70,13 +70,20 @@ import { SellerService } from '../services/seller.service';
                   <div class="stat-divider"></div>
                   <div class="stat">
                     <span class="stat-value">
-                      @if (shop.rating > 0) {
-                        <i class="pi pi-star-fill star-icon"></i> {{ shop.rating }}
+                      @if (shop.avgRating > 0) {
+                        <i class="pi pi-star-fill star-icon"></i> {{ shop.avgRating }}
                       } @else {
                         New
                       }
                     </span>
-                    <span class="stat-label">Rating</span>
+                    <span class="stat-label">
+                      @if (shop.avgRating > 0) {
+                        Rating ({{ shop.totalReviews }}
+                        {{ shop.totalReviews === 1 ? 'review' : 'reviews' }})
+                      } @else {
+                        Rating
+                      }
+                    </span>
                   </div>
                   <div class="stat-divider"></div>
                   <div class="stat">

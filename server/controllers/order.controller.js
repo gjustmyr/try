@@ -8,6 +8,9 @@ const {
   User,
   InventoryLog,
   Review,
+  Coupon,
+  CouponUsage,
+  TaxConfig,
 } = require("../models");
 const { sequelize } = require("../config/database");
 const { Op } = require("sequelize");
@@ -16,7 +19,7 @@ const { Op } = require("sequelize");
 exports.placeOrder = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { addressId, cartItemIds, notes } = req.body;
+    const { addressId, cartItemIds, notes, couponCode } = req.body;
     const userId = req.user.id;
 
     if (!addressId) {
@@ -80,8 +83,136 @@ exports.placeOrder = async (req, res) => {
       subtotal += parseFloat(item.product.price) * item.quantity;
     }
 
-    const shippingFee = 0;
-    const total = subtotal + shippingFee;
+    // Get active tax configuration
+    const taxConfig = await TaxConfig.findOne({
+      where: { isActive: true },
+      order: [["createdAt", "DESC"]],
+    });
+
+    // Calculate VAT-inclusive (extract tax from subtotal, not add to it)
+    // Formula: taxAmount = subtotal - (subtotal / (1 + taxRate/100))
+    const taxRate = taxConfig ? parseFloat(taxConfig.rate) : 0;
+    const taxAmount =
+      taxRate > 0 ? subtotal - subtotal / (1 + taxRate / 100) : 0;
+
+    // Handle coupons - allow stacking: 1 FSV + 1 product discount
+    let discountAmount = 0;
+    let shippingDiscount = 0;
+    let validatedCoupons = [];
+    let appliedCouponCodes = [];
+
+    if (couponCode) {
+      // Support both single code (string) or multiple codes (array)
+      const couponCodes = Array.isArray(couponCode) ? couponCode : [couponCode];
+
+      // Separate coupons by type
+      let freeShippingCoupon = null;
+      let productDiscountCoupon = null;
+
+      for (const code of couponCodes) {
+        console.log(`[COUPON DEBUG] Checking coupon code: ${code}`);
+        const coupon = await Coupon.findOne({
+          where: {
+            code: code.toUpperCase(),
+            isActive: true,
+            validFrom: { [Op.lte]: new Date() },
+            validUntil: { [Op.gte]: new Date() },
+          },
+          transaction: t,
+        });
+
+        if (!coupon) {
+          console.log(`[COUPON DEBUG] Coupon ${code} not found or invalid`);
+          continue;
+        }
+
+        console.log(
+          `[COUPON DEBUG] Found coupon: ${coupon.code}, type: ${coupon.discountType}, value: ${coupon.discountValue}`,
+        );
+
+        // Check usage limits
+        const userUsageCount = await CouponUsage.count({
+          where: { couponId: coupon.id, userId },
+          transaction: t,
+        });
+
+        console.log(
+          `[COUPON DEBUG] Usage check - Global: ${coupon.usageCount}/${coupon.usageLimit || "unlimited"}, User: ${userUsageCount}/${coupon.perUserLimit}, MinOrder: ${coupon.minOrderAmount}, Subtotal: ${subtotal}`,
+        );
+
+        if (
+          (!coupon.usageLimit || coupon.usageCount < coupon.usageLimit) &&
+          userUsageCount < coupon.perUserLimit &&
+          subtotal >= coupon.minOrderAmount
+        ) {
+          // Categorize coupon
+          if (coupon.discountType === "free_shipping" && !freeShippingCoupon) {
+            freeShippingCoupon = coupon;
+            console.log(
+              `[COUPON DEBUG] Applied free shipping coupon: ${coupon.code}`,
+            );
+          } else if (
+            (coupon.discountType === "percentage" ||
+              coupon.discountType === "fixed") &&
+            !productDiscountCoupon
+          ) {
+            productDiscountCoupon = coupon;
+            console.log(
+              `[COUPON DEBUG] Applied product discount coupon: ${coupon.code}`,
+            );
+          } else {
+            console.log(
+              `[COUPON DEBUG] Coupon ${code} not applied - duplicate type or already have one of this type`,
+            );
+          }
+        } else {
+          console.log(`[COUPON DEBUG] Coupon ${code} failed validation checks`);
+        }
+      }
+
+      // Apply free shipping coupon
+      if (freeShippingCoupon) {
+        shippingDiscount = freeShippingCoupon.discountValue;
+        validatedCoupons.push(freeShippingCoupon);
+        appliedCouponCodes.push(freeShippingCoupon.code);
+        console.log(
+          `[COUPON DEBUG] Free shipping discount applied: ₱${shippingDiscount}`,
+        );
+      }
+
+      // Apply product discount coupon
+      if (productDiscountCoupon) {
+        if (productDiscountCoupon.discountType === "percentage") {
+          discountAmount =
+            (subtotal * productDiscountCoupon.discountValue) / 100;
+          if (productDiscountCoupon.maxDiscountAmount) {
+            discountAmount = Math.min(
+              discountAmount,
+              productDiscountCoupon.maxDiscountAmount,
+            );
+          }
+        } else if (productDiscountCoupon.discountType === "fixed") {
+          discountAmount = Math.min(
+            productDiscountCoupon.discountValue,
+            subtotal,
+          );
+        }
+        validatedCoupons.push(productDiscountCoupon);
+        appliedCouponCodes.push(productDiscountCoupon.code);
+        console.log(
+          `[COUPON DEBUG] Product discount applied: ₱${discountAmount}`,
+        );
+      }
+
+      console.log(
+        `[COUPON DEBUG] Final discounts - Product: ₱${discountAmount}, Shipping: ₱${shippingDiscount}`,
+      );
+    }
+
+    const shippingFee = 50; // Base shipping fee
+    const finalShippingFee = Math.max(0, shippingFee - shippingDiscount);
+    // Total: subtotal already includes tax, just subtract discount and add shipping
+    const total = subtotal - discountAmount + finalShippingFee;
 
     // Generate order number
     const orderNumber =
@@ -100,7 +231,13 @@ exports.placeOrder = async (req, res) => {
         addressId,
         orderNumber,
         subtotal,
-        shippingFee,
+        taxAmount,
+        taxRate,
+        discountAmount,
+        couponCode:
+          appliedCouponCodes.length > 0 ? appliedCouponCodes.join(", ") : null,
+        shippingFee: finalShippingFee,
+        shippingDiscount,
         total,
         paymentMethod: "cod",
         notes: notes || null,
@@ -108,6 +245,37 @@ exports.placeOrder = async (req, res) => {
       },
       { transaction: t },
     );
+
+    // Record coupon usage for all applied coupons
+    for (const coupon of validatedCoupons) {
+      // Calculate the specific discount amount for this coupon
+      let couponDiscountAmount = 0;
+      if (coupon.discountType === "free_shipping") {
+        couponDiscountAmount = shippingDiscount;
+      } else if (coupon.discountType === "percentage") {
+        couponDiscountAmount = (subtotal * coupon.discountValue) / 100;
+        if (coupon.maxDiscountAmount) {
+          couponDiscountAmount = Math.min(
+            couponDiscountAmount,
+            coupon.maxDiscountAmount,
+          );
+        }
+      } else if (coupon.discountType === "fixed") {
+        couponDiscountAmount = Math.min(coupon.discountValue, subtotal);
+      }
+
+      await CouponUsage.create(
+        {
+          couponId: coupon.id,
+          userId,
+          orderId: order.id,
+          discountAmount: couponDiscountAmount,
+        },
+        { transaction: t },
+      );
+
+      await coupon.increment("usageCount", { transaction: t });
+    }
 
     // Create order items and reduce stock
     for (const item of cartItems) {
@@ -159,6 +327,20 @@ exports.placeOrder = async (req, res) => {
 
     await t.commit();
 
+    // Debug: Log the created order values
+    console.log("Order created:", {
+      orderNumber: order.orderNumber,
+      subtotal: order.subtotal,
+      discountAmount: order.discountAmount,
+      shippingDiscount: order.shippingDiscount,
+      couponCode: order.couponCode,
+      total: order.total,
+      appliedCoupons: validatedCoupons.map((c) => ({
+        code: c.code,
+        type: c.discountType,
+      })),
+    });
+
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
@@ -168,12 +350,19 @@ exports.placeOrder = async (req, res) => {
         total: order.total,
         status: order.status,
         estimatedDelivery: order.estimatedDelivery,
+        discountAmount: order.discountAmount,
+        shippingDiscount: order.shippingDiscount,
+        couponCode: order.couponCode,
       },
     });
   } catch (error) {
     await t.rollback();
     console.error("Place order error:", error);
-    res.status(500).json({ success: false, message: "Failed to place order" });
+    res.status(500).json({
+      success: false,
+      message: "Failed to place order",
+      error: error.message, // Add error details for debugging
+    });
   }
 };
 
@@ -183,6 +372,25 @@ exports.getOrders = async (req, res) => {
     const userId = req.user.id;
     const orders = await Order.findAll({
       where: { userId },
+      attributes: [
+        "id",
+        "orderNumber",
+        "status",
+        "subtotal",
+        "taxAmount",
+        "taxRate",
+        "discountAmount",
+        "couponCode",
+        "shippingFee",
+        "shippingDiscount",
+        "total",
+        "paymentMethod",
+        "trackingNumber",
+        "notes",
+        "estimatedDelivery",
+        "createdAt",
+        "updatedAt",
+      ],
       include: [
         {
           model: OrderItem,
@@ -210,6 +418,12 @@ exports.getOrders = async (req, res) => {
         });
 
         orderJson.hasReview = !!hasReview;
+
+        // Debug: Log discount values
+        console.log(
+          `Order ${orderJson.orderNumber}: discountAmount=${orderJson.discountAmount}, shippingDiscount=${orderJson.shippingDiscount}`,
+        );
+
         return orderJson;
       }),
     );

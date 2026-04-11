@@ -31,6 +31,8 @@ const deliveryRoutes = require("./routes/delivery.routes");
 const hubRoutes = require("./routes/hub.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
+const taxRoutes = require("./routes/tax.routes");
+const couponRoutes = require("./routes/coupon.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -60,6 +62,8 @@ app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/hub", hubRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/inventory", inventoryRoutes);
+app.use("/api/tax", taxRoutes);
+app.use("/api/coupons", couponRoutes);
 
 // Unified search endpoint
 const productService = require("./services/product.service");
@@ -81,10 +85,30 @@ app.get("/api/search", async (req, res) => {
         limit: searchLimit,
       }),
     ]);
+
+    const { Review } = require("./models");
     const shopsWithCounts = await Promise.all(
       shops.map(async (shop) => {
         const productCount = await sellerService.getShopProductCount(shop.id);
-        return { ...shop.toJSON(), productCount };
+
+        // Get seller reviews aggregation
+        const reviews = await Review.findAll({
+          where: { sellerId: shop.id },
+          attributes: ["rating"],
+        });
+
+        const totalReviews = reviews.length;
+        const avgRating =
+          totalReviews > 0
+            ? reviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+            : 0;
+
+        return {
+          ...shop.toJSON(),
+          productCount,
+          avgRating: Math.round(avgRating * 10) / 10,
+          totalReviews,
+        };
       }),
     );
     res.json({ success: true, data: { products, shops: shopsWithCounts } });

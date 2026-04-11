@@ -9,10 +9,11 @@ import { HubService } from '../services/hub.service';
   selector: 'app-hub-dashboard',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  styleUrls: ['./seller-dashboard.component.css'],
   template: `
-    <div class="hub-layout">
+    <div class="dashboard-layout">
       <!-- Sidebar -->
-      <aside class="hub-sidebar">
+      <aside class="sidebar">
         <div class="sidebar-header">
           <i class="pi pi-building"></i>
           <span>Hub Operations</span>
@@ -32,63 +33,63 @@ import { HubService } from '../services/hub.service';
             [class.active]="activeTab === 'parcels'"
             (click)="activeTab = 'parcels'; filterStatus = ''; loadParcels()"
           >
-            <i class="pi pi-box"></i> <span>All Parcels</span>
+            <i class="pi pi-box"></i><span>All Parcels</span>
           </a>
           <a
             class="nav-item"
             [class.active]="activeTab === 'receive'"
             (click)="activeTab = 'receive'; openReceiveModal()"
           >
-            <i class="pi pi-plus-circle"></i> <span>Receive Parcel</span>
+            <i class="pi pi-plus-circle"></i><span>Receive Parcel</span>
           </a>
           <a
             class="nav-item"
             [class.active]="activeTab === 'received'"
             (click)="activeTab = 'received'; filterStatus = 'received_at_hub'; loadParcels()"
           >
-            <i class="pi pi-check-circle"></i> <span>Received</span>
+            <i class="pi pi-check-circle"></i><span>Received</span>
           </a>
           <a
             class="nav-item"
             [class.active]="activeTab === 'transit'"
             (click)="activeTab = 'transit'; filterStatus = 'in_transit'; loadParcels()"
           >
-            <i class="pi pi-truck"></i> <span>In Transit</span>
+            <i class="pi pi-truck"></i><span>In Transit</span>
           </a>
           <a
             class="nav-item"
             [class.active]="activeTab === 'destination'"
             (click)="activeTab = 'destination'; filterStatus = 'at_destination_hub'; loadParcels()"
           >
-            <i class="pi pi-map-marker"></i> <span>At Destination</span>
+            <i class="pi pi-map-marker"></i><span>At Destination</span>
           </a>
           <a
             class="nav-item"
             [class.active]="activeTab === 'out'"
             (click)="activeTab = 'out'; filterStatus = 'out_for_delivery'; loadParcels()"
           >
-            <i class="pi pi-send"></i> <span>Out for Delivery</span>
+            <i class="pi pi-send"></i><span>Out for Delivery</span>
           </a>
           <a
             class="nav-item"
             [class.active]="activeTab === 'drivers'"
             (click)="activeTab = 'drivers'; loadDrivers()"
           >
-            <i class="pi pi-car"></i> <span>Drivers</span>
+            <i class="pi pi-car"></i><span>Drivers</span>
           </a>
         </nav>
         <div class="sidebar-footer">
           <button class="back-btn" (click)="navigate(isAdmin() ? '/admin' : '/')" *ngIf="isAdmin()">
-            <i class="pi pi-arrow-left"></i> <span>Back to Admin</span>
+            <i class="pi pi-arrow-left"></i><span>Back to Admin</span>
           </button>
           <button class="logout-btn" (click)="logout()">
-            <i class="pi pi-sign-out"></i> <span>Logout</span>
+            <i class="pi pi-sign-out"></i><span>Logout</span>
           </button>
         </div>
       </aside>
 
       <!-- Main Content -->
-      <main class="hub-main">
+      <main class="main-content">
         <header class="top-bar">
           <div class="top-bar-left">
             <h1>{{ getSelectedHub()?.name || 'Hub Dashboard' }}</h1>
@@ -486,36 +487,7 @@ import { HubService } from '../services/hub.service';
   `,
   styles: [
     `
-      .hub-layout {
-        display: flex;
-        min-height: 100vh;
-        background: #f3f4f6;
-      }
-
-      .hub-sidebar {
-        width: 260px;
-        background: white;
-        border-right: 1px solid #e5e7eb;
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        height: 100vh;
-        z-index: 10;
-      }
-      .sidebar-header {
-        padding: 20px;
-        font-size: 18px;
-        font-weight: 700;
-        color: #1f2937;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .sidebar-header i {
-        color: #ff6b35;
-        font-size: 20px;
-      }
+      /* Hub-specific styles */
       .hub-selector {
         padding: 16px 20px;
         border-bottom: 1px solid #e5e7eb;
@@ -538,93 +510,10 @@ import { HubService } from '../services/hub.service';
         color: #374151;
         background: white;
       }
-      .sidebar-nav {
-        flex: 1;
-        padding: 12px 0;
-        overflow-y: auto;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 20px;
-        font-size: 14px;
-        color: #6b7280;
-        cursor: pointer;
-        transition: all 0.15s;
-        text-decoration: none;
-      }
-      .nav-item:hover {
-        background: #f9fafb;
-        color: #1f2937;
-      }
-      .nav-item.active {
-        background: #fff7ed;
-        color: #ff6b35;
-        font-weight: 600;
-        border-right: 3px solid #ff6b35;
-      }
-      .nav-item i {
-        font-size: 16px;
-        width: 20px;
-        text-align: center;
-      }
-      .sidebar-footer {
-        padding: 16px 20px;
-        border-top: 1px solid #e5e7eb;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .back-btn,
-      .logout-btn {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        border: none;
-        border-radius: 8px;
-        font-size: 13px;
-        cursor: pointer;
-        font-weight: 500;
-      }
-      .back-btn {
-        background: #f3f4f6;
-        color: #374151;
-      }
-      .back-btn:hover {
-        background: #e5e7eb;
-      }
-      .logout-btn {
-        background: #fef2f2;
-        color: #dc2626;
-      }
-      .logout-btn:hover {
-        background: #fee2e2;
-      }
 
-      .hub-main {
-        flex: 1;
-        margin-left: 260px;
-      }
-      .top-bar {
-        background: white;
-        padding: 20px 30px;
-        border-bottom: 1px solid #e5e7eb;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      .top-bar h1 {
-        font-size: 20px;
-        font-weight: 700;
-        color: #1f2937;
-        margin: 0;
-      }
-      .breadcrumb {
-        font-size: 13px;
-        color: #6b7280;
-        margin: 4px 0 0;
+      /* Content area styles */
+      .content-area {
+        padding: 24px 30px;
       }
       .stat-pills {
         display: flex;
@@ -658,9 +547,6 @@ import { HubService } from '../services/hub.service';
         color: #166534;
       }
 
-      .content-area {
-        padding: 24px 30px;
-      }
       .loading-state,
       .empty-state {
         text-align: center;
@@ -678,6 +564,7 @@ import { HubService } from '../services/hub.service';
         color: #ff6b35;
       }
 
+      /* Parcel cards */
       .parcels-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -921,7 +808,8 @@ import { HubService } from '../services/hub.service';
         color: #374151;
         margin-bottom: 6px;
       }
-      .form-group select {
+      .form-group select,
+      .form-group input {
         width: 100%;
         padding: 10px 12px;
         border: 1px solid #d1d5db;
@@ -1201,32 +1089,8 @@ import { HubService } from '../services/hub.service';
         gap: 16px;
         margin-bottom: 16px;
       }
-      .form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-      }
       .form-group.full {
         grid-column: 1 / -1;
-      }
-      .form-group label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #374151;
-      }
-      .form-group input,
-      .form-group select {
-        padding: 10px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
-        font-size: 14px;
-        background: white;
-      }
-      .form-group input:focus,
-      .form-group select:focus {
-        outline: none;
-        border-color: #ff6b35;
-        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
       }
       .error-msg {
         background: #fee2e2;
@@ -1238,17 +1102,6 @@ import { HubService } from '../services/hub.service';
       }
 
       @media (max-width: 768px) {
-        .hub-sidebar {
-          width: 60px;
-        }
-        .hub-sidebar span,
-        .hub-selector,
-        .sidebar-header span {
-          display: none;
-        }
-        .hub-main {
-          margin-left: 60px;
-        }
         .parcels-grid {
           grid-template-columns: 1fr;
         }

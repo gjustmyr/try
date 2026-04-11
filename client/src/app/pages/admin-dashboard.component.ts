@@ -55,6 +55,20 @@ import * as L from 'leaflet';
           >
             <i class="pi pi-truck"></i><span>Deliveries</span>
           </a>
+          <a
+            class="nav-item"
+            [class.active]="activeTab === 'coupons'"
+            (click)="activeTab = 'coupons'; loadCoupons()"
+          >
+            <i class="pi pi-ticket"></i><span>Coupons & Vouchers</span>
+          </a>
+          <a
+            class="nav-item"
+            [class.active]="activeTab === 'tax'"
+            (click)="activeTab = 'tax'; loadTaxConfigs()"
+          >
+            <i class="pi pi-percentage"></i><span>Tax Settings</span>
+          </a>
         </nav>
         <div class="sidebar-footer">
           <button class="logout-btn" (click)="logout()">
@@ -402,7 +416,261 @@ import * as L from 'leaflet';
             </div>
           </div>
         </div>
+
+        <!-- ============ COUPONS TAB ============ -->
+        <div *ngIf="activeTab === 'coupons'">
+          <header class="top-bar">
+            <div class="top-bar-left">
+              <h1>Coupons & Vouchers</h1>
+              <p class="breadcrumb">Admin / Coupons</p>
+            </div>
+            <div class="top-bar-right">
+              <button class="primary-btn" (click)="openCouponModal()">
+                <i class="pi pi-plus"></i> Create Coupon
+              </button>
+            </div>
+          </header>
+          <div class="tab-content">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Code</th>
+                    <th>Type</th>
+                    <th>Value</th>
+                    <th>Min. Order</th>
+                    <th>Usage</th>
+                    <th>Valid Until</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let coupon of coupons">
+                    <td class="mono bold">{{ coupon.code }}</td>
+                    <td>
+                      <span class="type-badge" [attr.data-type]="coupon.discountType">
+                        {{ formatCouponType(coupon.discountType) }}
+                      </span>
+                    </td>
+                    <td>{{ formatCouponValue(coupon) }}</td>
+                    <td>₱{{ coupon.minOrderAmount | number: '1.2-2' }}</td>
+                    <td>{{ coupon.usageCount }} / {{ coupon.usageLimit || '∞' }}</td>
+                    <td class="date-cell">{{ coupon.validUntil | date: 'MMM d, yyyy' }}</td>
+                    <td>
+                      <span
+                        class="status-chip"
+                        [attr.data-status]="coupon.isActive ? 'active' : 'inactive'"
+                      >
+                        {{ coupon.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="icon-btn" (click)="editCoupon(coupon)" title="Edit">
+                        <i class="pi pi-pencil"></i>
+                      </button>
+                      <button
+                        class="icon-btn danger"
+                        (click)="deleteCoupon(coupon.id)"
+                        title="Delete"
+                      >
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="empty-state" *ngIf="coupons.length === 0">
+                <i class="pi pi-ticket"></i>
+                <p>No coupons created yet</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ TAX TAB ============ -->
+        <div *ngIf="activeTab === 'tax'">
+          <header class="top-bar">
+            <div class="top-bar-left">
+              <h1>Tax Settings</h1>
+              <p class="breadcrumb">Admin / Tax</p>
+            </div>
+            <div class="top-bar-right">
+              <button class="primary-btn" (click)="openTaxModal()">
+                <i class="pi pi-plus"></i> Add Tax Config
+              </button>
+            </div>
+          </header>
+          <div class="tab-content">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Rate</th>
+                    <th>Region</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let tax of taxConfigs">
+                    <td class="bold">{{ tax.name }}</td>
+                    <td>{{ tax.taxType | uppercase }}</td>
+                    <td>{{ tax.rate }}%</td>
+                    <td>{{ tax.region || 'All' }}</td>
+                    <td>
+                      <span
+                        class="status-chip"
+                        [attr.data-status]="tax.isActive ? 'active' : 'inactive'"
+                      >
+                        {{ tax.isActive ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                    <td>
+                      <button class="icon-btn" (click)="editTax(tax)" title="Edit">
+                        <i class="pi pi-pencil"></i>
+                      </button>
+                      <button class="icon-btn danger" (click)="deleteTax(tax.id)" title="Delete">
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="empty-state" *ngIf="taxConfigs.length === 0">
+                <i class="pi pi-percentage"></i>
+                <p>No tax configurations</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </main>
+    </div>
+
+    <!-- ============ COUPON MODAL ============ -->
+    <div class="modal-overlay" *ngIf="showCouponModal">
+      <div class="modal-box form-modal">
+        <h3>{{ editingCouponId ? 'Edit Coupon' : 'Create Coupon' }}</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Coupon Code *</label>
+            <input
+              [(ngModel)]="couponForm.code"
+              placeholder="SAVE20"
+              style="text-transform: uppercase"
+            />
+          </div>
+          <div class="form-group">
+            <label>Discount Type *</label>
+            <select [(ngModel)]="couponForm.discountType">
+              <option value="percentage">Percentage</option>
+              <option value="fixed">Fixed Amount</option>
+              <option value="free_shipping">Free Shipping</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Discount Value *</label>
+            <input type="number" [(ngModel)]="couponForm.discountValue" placeholder="20" />
+          </div>
+          <div class="form-group">
+            <label>Min. Order Amount</label>
+            <input type="number" [(ngModel)]="couponForm.minOrderAmount" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label>Max Discount (optional)</label>
+            <input
+              type="number"
+              [(ngModel)]="couponForm.maxDiscountAmount"
+              placeholder="Leave empty for no limit"
+            />
+          </div>
+          <div class="form-group">
+            <label>Usage Limit (optional)</label>
+            <input
+              type="number"
+              [(ngModel)]="couponForm.usageLimit"
+              placeholder="Leave empty for unlimited"
+            />
+          </div>
+          <div class="form-group">
+            <label>Per User Limit</label>
+            <input type="number" [(ngModel)]="couponForm.perUserLimit" placeholder="1" />
+          </div>
+          <div class="form-group">
+            <label>Valid From *</label>
+            <input type="datetime-local" [(ngModel)]="couponForm.validFrom" />
+          </div>
+          <div class="form-group">
+            <label>Valid Until *</label>
+            <input type="datetime-local" [(ngModel)]="couponForm.validUntil" />
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="couponForm.isActive" />
+              Active
+            </label>
+          </div>
+          <div class="form-group full">
+            <label>Description</label>
+            <textarea
+              [(ngModel)]="couponForm.description"
+              rows="2"
+              placeholder="Save 20% on your order"
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-btn" (click)="closeCouponModal()">Cancel</button>
+          <button class="primary-btn" (click)="saveCoupon()" [disabled]="savingCoupon">
+            <i class="pi pi-spin pi-spinner" *ngIf="savingCoupon"></i>
+            {{ editingCouponId ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ TAX MODAL ============ -->
+    <div class="modal-overlay" *ngIf="showTaxModal">
+      <div class="modal-box form-modal">
+        <h3>{{ editingTaxId ? 'Edit Tax Config' : 'Add Tax Config' }}</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Name *</label>
+            <input [(ngModel)]="taxForm.name" placeholder="VAT" />
+          </div>
+          <div class="form-group">
+            <label>Tax Type *</label>
+            <select [(ngModel)]="taxForm.taxType">
+              <option value="vat">VAT</option>
+              <option value="sales_tax">Sales Tax</option>
+              <option value="gst">GST</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Rate (%) *</label>
+            <input type="number" step="0.01" [(ngModel)]="taxForm.rate" placeholder="12" />
+          </div>
+          <div class="form-group">
+            <label>Region (optional)</label>
+            <input [(ngModel)]="taxForm.region" placeholder="NCR, Region VII, etc." />
+          </div>
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="taxForm.isActive" />
+              Active
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="secondary-btn" (click)="closeTaxModal()">Cancel</button>
+          <button class="primary-btn" (click)="saveTax()" [disabled]="savingTax">
+            <i class="pi pi-spin pi-spinner" *ngIf="savingTax"></i>
+            {{ editingTaxId ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- ============ HUB MODAL ============ -->
@@ -1666,5 +1934,208 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
   logout() {
     this.authService.logout();
+  }
+
+  // ---- Coupons ----
+  coupons: any[] = [];
+  showCouponModal = false;
+  editingCouponId = '';
+  couponForm: any = {
+    code: '',
+    description: '',
+    discountType: 'percentage',
+    discountValue: 0,
+    minOrderAmount: 0,
+    maxDiscountAmount: null,
+    usageLimit: null,
+    perUserLimit: 1,
+    validFrom: '',
+    validUntil: '',
+    isActive: true,
+  };
+  savingCoupon = false;
+
+  loadCoupons() {
+    this.adminService.getAllCoupons().subscribe({
+      next: (res: any) => {
+        if (res.success) this.coupons = res.data;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openCouponModal() {
+    this.editingCouponId = '';
+    this.couponForm = {
+      code: '',
+      description: '',
+      discountType: 'percentage',
+      discountValue: 0,
+      minOrderAmount: 0,
+      maxDiscountAmount: null,
+      usageLimit: null,
+      perUserLimit: 1,
+      validFrom: '',
+      validUntil: '',
+      isActive: true,
+    };
+    this.showCouponModal = true;
+  }
+
+  closeCouponModal() {
+    this.showCouponModal = false;
+    this.editingCouponId = '';
+  }
+
+  editCoupon(coupon: any) {
+    this.editingCouponId = coupon.id;
+    this.couponForm = {
+      code: coupon.code,
+      description: coupon.description,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      minOrderAmount: coupon.minOrderAmount,
+      maxDiscountAmount: coupon.maxDiscountAmount,
+      usageLimit: coupon.usageLimit,
+      perUserLimit: coupon.perUserLimit,
+      validFrom: new Date(coupon.validFrom).toISOString().slice(0, 16),
+      validUntil: new Date(coupon.validUntil).toISOString().slice(0, 16),
+      isActive: coupon.isActive,
+    };
+    this.showCouponModal = true;
+  }
+
+  saveCoupon() {
+    this.savingCoupon = true;
+    const obs = this.editingCouponId
+      ? this.adminService.updateCoupon(this.editingCouponId, this.couponForm)
+      : this.adminService.createCoupon(this.couponForm);
+
+    obs.subscribe({
+      next: (res: any) => {
+        this.savingCoupon = false;
+        if (res.success) {
+          this.closeCouponModal();
+          this.loadCoupons();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.savingCoupon = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  deleteCoupon(id: string) {
+    if (!confirm('Delete this coupon?')) return;
+    this.adminService.deleteCoupon(id).subscribe({
+      next: (res: any) => {
+        if (res.success) this.loadCoupons();
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  formatCouponType(type: string): string {
+    const map: any = {
+      percentage: 'Percentage',
+      fixed: 'Fixed Amount',
+      free_shipping: 'Free Shipping',
+    };
+    return map[type] || type;
+  }
+
+  formatCouponValue(coupon: any): string {
+    if (coupon.discountType === 'percentage') {
+      return `${coupon.discountValue}%`;
+    } else if (coupon.discountType === 'fixed') {
+      return `₱${coupon.discountValue}`;
+    } else {
+      return 'Free Shipping';
+    }
+  }
+
+  // ---- Tax ----
+  taxConfigs: any[] = [];
+  showTaxModal = false;
+  editingTaxId = '';
+  taxForm: any = {
+    name: '',
+    taxType: 'vat',
+    rate: 0,
+    region: '',
+    isActive: true,
+  };
+  savingTax = false;
+
+  loadTaxConfigs() {
+    this.adminService.getAllTaxConfigs().subscribe({
+      next: (res: any) => {
+        if (res.success) this.taxConfigs = res.data;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  openTaxModal() {
+    this.editingTaxId = '';
+    this.taxForm = {
+      name: '',
+      taxType: 'vat',
+      rate: 0,
+      region: '',
+      isActive: true,
+    };
+    this.showTaxModal = true;
+  }
+
+  closeTaxModal() {
+    this.showTaxModal = false;
+    this.editingTaxId = '';
+  }
+
+  editTax(tax: any) {
+    this.editingTaxId = tax.id;
+    this.taxForm = {
+      name: tax.name,
+      taxType: tax.taxType,
+      rate: tax.rate,
+      region: tax.region,
+      isActive: tax.isActive,
+    };
+    this.showTaxModal = true;
+  }
+
+  saveTax() {
+    this.savingTax = true;
+    const obs = this.editingTaxId
+      ? this.adminService.updateTaxConfig(this.editingTaxId, this.taxForm)
+      : this.adminService.createTaxConfig(this.taxForm);
+
+    obs.subscribe({
+      next: (res: any) => {
+        this.savingTax = false;
+        if (res.success) {
+          this.closeTaxModal();
+          this.loadTaxConfigs();
+        }
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.savingTax = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  deleteTax(id: string) {
+    if (!confirm('Delete this tax configuration?')) return;
+    this.adminService.deleteTaxConfig(id).subscribe({
+      next: (res: any) => {
+        if (res.success) this.loadTaxConfigs();
+        this.cdr.detectChanges();
+      },
+    });
   }
 }

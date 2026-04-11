@@ -9,6 +9,9 @@ const DeliveryHub = require("./delivery-hub.model");
 const Driver = require("./driver.model");
 const Delivery = require("./delivery.model");
 const InventoryLog = require("./inventory-log.model");
+const TaxConfig = require("./tax-config.model");
+const Coupon = require("./coupon.model");
+const CouponUsage = require("./coupon-usage.model");
 
 // Define associations
 User.hasOne(Seller, {
@@ -240,6 +243,45 @@ InventoryLog.belongsTo(Order, {
   as: "order",
 });
 
+// Coupon associations
+Coupon.belongsTo(User, {
+  foreignKey: "createdBy",
+  as: "creator",
+});
+
+User.hasMany(CouponUsage, {
+  foreignKey: "userId",
+  as: "couponUsages",
+  onDelete: "CASCADE",
+});
+
+CouponUsage.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+Coupon.hasMany(CouponUsage, {
+  foreignKey: "couponId",
+  as: "usages",
+  onDelete: "CASCADE",
+});
+
+CouponUsage.belongsTo(Coupon, {
+  foreignKey: "couponId",
+  as: "coupon",
+});
+
+Order.hasMany(CouponUsage, {
+  foreignKey: "orderId",
+  as: "couponUsages",
+  onDelete: "CASCADE",
+});
+
+CouponUsage.belongsTo(Order, {
+  foreignKey: "orderId",
+  as: "order",
+});
+
 module.exports = {
   User,
   Seller,
@@ -253,4 +295,7 @@ module.exports = {
   Driver,
   Delivery,
   InventoryLog,
+  TaxConfig,
+  Coupon,
+  CouponUsage,
 };

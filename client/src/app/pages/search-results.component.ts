@@ -25,12 +25,50 @@ import { ProductService } from '../services/product.service';
           </p>
         </div>
 
+        <!-- Filters Bar -->
+        <div class="filters-bar" *ngIf="!loading && (products.length > 0 || shops.length > 0)">
+          <div class="view-filters">
+            <button
+              class="filter-btn"
+              [class.active]="viewFilter === 'all'"
+              (click)="setViewFilter('all')"
+            >
+              <i class="pi pi-th-large"></i> All Results
+            </button>
+            <button
+              class="filter-btn"
+              [class.active]="viewFilter === 'products'"
+              (click)="setViewFilter('products')"
+            >
+              <i class="pi pi-box"></i> Products ({{ products.length }})
+            </button>
+            <button
+              class="filter-btn"
+              [class.active]="viewFilter === 'shops'"
+              (click)="setViewFilter('shops')"
+            >
+              <i class="pi pi-shop"></i> Stores ({{ shops.length }})
+            </button>
+          </div>
+
+          <div class="sort-controls" *ngIf="showProducts && products.length > 0">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select" [value]="sortBy" (change)="onSortChange($event)">
+              <option value="relevance">Relevance</option>
+              <option value="price-low">Price: Low to High</option>
+              <option value="price-high">Price: High to Low</option>
+              <option value="best-selling">Best Selling</option>
+              <option value="rating">Highest Rated</option>
+            </select>
+          </div>
+        </div>
+
         <div class="loading" *ngIf="loading">
           <i class="pi pi-spin pi-spinner"></i> Searching...
         </div>
 
         <!-- Shops Section -->
-        <div class="section" *ngIf="!loading && shops.length > 0">
+        <div class="section" *ngIf="!loading && shops.length > 0 && showShops">
           <h3 class="section-title"><i class="pi pi-shop"></i> Stores</h3>
           <div class="shops-grid">
             <div class="shop-card" *ngFor="let shop of shops" (click)="goToShop(shop.id)">
@@ -51,7 +89,14 @@ import { ProductService } from '../services/product.service';
                 <h4 class="shop-name">{{ shop.shopName }}</h4>
                 <p class="shop-desc" *ngIf="shop.shopDescription">{{ shop.shopDescription }}</p>
                 <div class="shop-stats">
-                  <span><i class="pi pi-star-fill"></i> {{ shop.rating || '0.0' }}</span>
+                  <span>
+                    <i class="pi pi-star-fill"></i>
+                    @if (shop.avgRating > 0) {
+                      {{ shop.avgRating }} ({{ shop.totalReviews }})
+                    } @else {
+                      New
+                    }
+                  </span>
                   <span><i class="pi pi-box"></i> {{ shop.productCount || 0 }} products</span>
                   <span class="badge" *ngIf="shop.businessType">{{ shop.businessType }}</span>
                 </div>
@@ -61,11 +106,11 @@ import { ProductService } from '../services/product.service';
         </div>
 
         <!-- Products Section -->
-        <div class="section" *ngIf="!loading && products.length > 0">
+        <div class="section" *ngIf="!loading && products.length > 0 && showProducts">
           <h3 class="section-title"><i class="pi pi-box"></i> Products</h3>
           <div class="products-grid">
             <app-product-card
-              *ngFor="let product of products"
+              *ngFor="let product of sortedProducts"
               [product]="product"
             ></app-product-card>
           </div>
@@ -110,6 +155,85 @@ import { ProductService } from '../services/product.service';
         color: #6b7280;
         margin: 0;
       }
+
+      /* Filters Bar */
+      .filters-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 16px;
+        background: white;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+        flex-wrap: wrap;
+      }
+
+      .view-filters {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .filter-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border: 1px solid #e5e7eb;
+        background: white;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 500;
+      }
+
+      .filter-btn:hover {
+        border-color: #ff6b35;
+        color: #ff6b35;
+      }
+
+      .filter-btn.active {
+        background: #ff6b35;
+        color: white;
+        border-color: #ff6b35;
+      }
+
+      .filter-btn i {
+        font-size: 14px;
+      }
+
+      .sort-controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .sort-controls label {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .sort-controls select {
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #374151;
+        background: white;
+        cursor: pointer;
+        outline: none;
+        min-width: 180px;
+      }
+
+      .sort-controls select:focus {
+        border-color: #ff6b35;
+      }
+
       .loading {
         text-align: center;
         padding: 60px 0;
@@ -255,6 +379,45 @@ import { ProductService } from '../services/product.service';
         cursor: pointer;
         text-decoration: underline;
       }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .filters-bar {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .view-filters {
+          width: 100%;
+        }
+
+        .filter-btn {
+          flex: 1;
+          justify-content: center;
+        }
+
+        .sort-controls {
+          width: 100%;
+        }
+
+        .sort-controls select {
+          flex: 1;
+        }
+
+        .products-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 500px) {
+        .products-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .view-filters {
+          flex-direction: column;
+        }
+      }
     `,
   ],
 })
@@ -263,6 +426,8 @@ export class SearchResultsComponent implements OnInit {
   products: any[] = [];
   shops: any[] = [];
   loading = false;
+  viewFilter: 'all' | 'products' | 'shops' = 'all';
+  sortBy: string = 'relevance';
 
   constructor(
     private route: ActivatedRoute,
@@ -304,5 +469,46 @@ export class SearchResultsComponent implements OnInit {
 
   goToShops() {
     this.router.navigate(['/shops']);
+  }
+
+  setViewFilter(filter: 'all' | 'products' | 'shops') {
+    this.viewFilter = filter;
+  }
+
+  get showProducts(): boolean {
+    return this.viewFilter === 'all' || this.viewFilter === 'products';
+  }
+
+  get showShops(): boolean {
+    return this.viewFilter === 'all' || this.viewFilter === 'shops';
+  }
+
+  get sortedProducts(): any[] {
+    let sorted = [...this.products];
+
+    switch (this.sortBy) {
+      case 'price-low':
+        sorted.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
+        break;
+      case 'price-high':
+        sorted.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
+        break;
+      case 'best-selling':
+        sorted.sort((a, b) => (b.sales || 0) - (a.sales || 0));
+        break;
+      case 'rating':
+        sorted.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+        break;
+      case 'relevance':
+      default:
+        // Keep original order (relevance from search)
+        break;
+    }
+
+    return sorted;
+  }
+
+  onSortChange(event: Event) {
+    this.sortBy = (event.target as HTMLSelectElement).value;
   }
 }

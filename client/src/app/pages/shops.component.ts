@@ -26,6 +26,16 @@ import { SellerService } from '../services/seller.service';
             <span class="shop-count"
               >{{ shops.length }} {{ shops.length === 1 ? 'Store' : 'Stores' }}</span
             >
+            <div class="sort-wrapper">
+              <label>Sort by:</label>
+              <select [value]="sortBy" (change)="onSortChange($event)">
+                <option value="best-selling">Best Selling</option>
+                <option value="rating">Highest Rated</option>
+                <option value="products">Most Products</option>
+                <option value="name-az">Name: A-Z</option>
+                <option value="name-za">Name: Z-A</option>
+              </select>
+            </div>
           </div>
 
           @if (isLoading) {
@@ -41,7 +51,7 @@ import { SellerService } from '../services/seller.service';
             </div>
           } @else {
             <div class="shops-grid">
-              @for (shop of shops; track shop.id) {
+              @for (shop of sortedShops; track shop.id) {
                 <div class="shop-card" (click)="goToShop(shop.id)">
                   <div class="shop-banner">
                     @if (shop.shopBanner) {
@@ -76,7 +86,11 @@ import { SellerService } from '../services/seller.service';
                       </span>
                       <span class="meta-item">
                         <i class="pi pi-star-fill"></i>
-                        {{ shop.rating > 0 ? shop.rating : 'New' }}
+                        @if (shop.avgRating > 0) {
+                          {{ shop.avgRating }} ({{ shop.totalReviews }})
+                        } @else {
+                          New
+                        }
                       </span>
                       <span class="meta-item">
                         <i class="pi pi-shopping-cart"></i>
@@ -141,6 +155,33 @@ import { SellerService } from '../services/seller.service';
         font-size: 15px;
         color: #6b7280;
         font-weight: 500;
+      }
+
+      .sort-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .sort-wrapper label {
+        font-size: 14px;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .sort-wrapper select {
+        padding: 8px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        color: #374151;
+        background: white;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .sort-wrapper select:focus {
+        border-color: #ff6b35;
       }
 
       .loading-state,
@@ -308,6 +349,11 @@ import { SellerService } from '../services/seller.service';
         .shops-grid {
           grid-template-columns: repeat(2, 1fr);
         }
+        .shops-header {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+        }
       }
       @media (max-width: 600px) {
         .shops-grid {
@@ -316,6 +362,12 @@ import { SellerService } from '../services/seller.service';
         .shops-hero h1 {
           font-size: 24px;
         }
+        .sort-wrapper {
+          width: 100%;
+        }
+        .sort-wrapper select {
+          flex: 1;
+        }
       }
     `,
   ],
@@ -323,6 +375,7 @@ import { SellerService } from '../services/seller.service';
 export class ShopsComponent implements OnInit {
   shops: any[] = [];
   isLoading = false;
+  sortBy: string = 'best-selling';
 
   constructor(
     private router: Router,
@@ -358,5 +411,35 @@ export class ShopsComponent implements OnInit {
 
   getInitial(name: string): string {
     return name ? name.charAt(0).toUpperCase() : 'S';
+  }
+
+  get sortedShops(): any[] {
+    let sorted = [...this.shops];
+
+    switch (this.sortBy) {
+      case 'best-selling':
+        sorted.sort((a, b) => (b.totalSales || 0) - (a.totalSales || 0));
+        break;
+      case 'rating':
+        sorted.sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+        break;
+      case 'products':
+        sorted.sort((a, b) => (b.productCount || 0) - (a.productCount || 0));
+        break;
+      case 'name-az':
+        sorted.sort((a, b) => a.shopName.localeCompare(b.shopName));
+        break;
+      case 'name-za':
+        sorted.sort((a, b) => b.shopName.localeCompare(a.shopName));
+        break;
+      default:
+        break;
+    }
+
+    return sorted;
+  }
+
+  onSortChange(event: Event) {
+    this.sortBy = (event.target as HTMLSelectElement).value;
   }
 }

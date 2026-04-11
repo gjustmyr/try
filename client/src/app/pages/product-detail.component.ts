@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ProductService } from '../services/product.service';
 import { AuthService } from '../services/auth.service';
 import { CartService } from '../services/cart.service';
+import { ReviewService } from '../services/review.service';
 import { NavbarComponent } from '../components/navbar.component';
 import { FooterComponent } from '../components/footer.component';
 
@@ -23,40 +24,18 @@ export class ProductDetailComponent implements OnInit {
   activeTab: 'description' | 'reviews' = 'description';
   reviewFilter: number = 0; // 0 = all, 1-5 = star filter
   cartMessage = '';
-
-  // Placeholder reviews (no backend yet)
-  reviews = [
-    {
-      id: 1,
-      author: 'Maria Santos',
-      avatar: 'MS',
-      rating: 5,
-      date: '2026-04-05',
-      comment:
-        'Excellent product! Fast delivery and exactly as described. Very satisfied with my purchase.',
-    },
-    {
-      id: 2,
-      author: 'Juan Cruz',
-      avatar: 'JC',
-      rating: 4,
-      date: '2026-04-02',
-      comment: 'Good quality for the price. Packaging was secure. Would buy again.',
-    },
-    {
-      id: 3,
-      author: 'Ana Reyes',
-      avatar: 'AR',
-      rating: 5,
-      date: '2026-03-28',
-      comment: 'Love it! Exactly what I was looking for. The seller was very responsive too.',
-    },
-  ];
+  reviews: any[] = [];
+  reviewData: any = {
+    avgRating: 0,
+    total: 0,
+    distribution: [],
+  };
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private productService: ProductService,
+    private reviewService: ReviewService,
     private cdr: ChangeDetectorRef,
     private authService: AuthService,
     private cartService: CartService,
@@ -76,12 +55,33 @@ export class ProductDetailComponent implements OnInit {
         this.isLoading = false;
         if (response.success) {
           this.product = response.data;
+          this.loadReviews(productId);
         }
         this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('Failed to load product:', error);
         this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+    });
+  }
+
+  loadReviews(productId: string) {
+    this.reviewService.getProductReviews(productId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.reviews = response.data.reviews || [];
+          this.reviewData = {
+            avgRating: response.data.avgRating || 0,
+            total: response.data.total || 0,
+            distribution: response.data.distribution || [],
+          };
+        }
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Failed to load reviews:', error);
         this.cdr.detectChanges();
       },
     });
@@ -108,9 +108,7 @@ export class ProductDetailComponent implements OnInit {
   }
 
   get averageRating(): number {
-    if (this.reviews.length === 0) return 0;
-    const sum = this.reviews.reduce((acc, r) => acc + r.rating, 0);
-    return Math.round((sum / this.reviews.length) * 10) / 10;
+    return this.reviewData.avgRating || 0;
   }
 
   getStars(rating: number): number[] {
@@ -125,15 +123,16 @@ export class ProductDetailComponent implements OnInit {
   }
 
   get ratingCounts(): number[] {
-    // index 0 unused, 1-5 = count of reviews with that rating
     const counts = [0, 0, 0, 0, 0, 0];
-    this.reviews.forEach((r) => counts[r.rating]++);
+    this.reviewData.distribution.forEach((d: any) => {
+      counts[d.star] = d.count;
+    });
     return counts;
   }
 
   ratingPercent(star: number): number {
-    if (this.reviews.length === 0) return 0;
-    return Math.round((this.ratingCounts[star] / this.reviews.length) * 100);
+    if (this.reviewData.total === 0) return 0;
+    return Math.round((this.ratingCounts[star] / this.reviewData.total) * 100);
   }
 
   setReviewFilter(star: number) {

@@ -46,10 +46,35 @@ const Order = sequelize.define(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
     },
+    taxAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+      field: "tax_amount",
+    },
+    taxRate: {
+      type: DataTypes.DECIMAL(5, 2),
+      defaultValue: 0,
+      field: "tax_rate",
+    },
+    discountAmount: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+      field: "discount_amount",
+    },
+    couponCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: "coupon_code",
+    },
     shippingFee: {
       type: DataTypes.DECIMAL(10, 2),
       defaultValue: 0,
       field: "shipping_fee",
+    },
+    shippingDiscount: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0,
+      field: "shipping_discount",
     },
     total: {
       type: DataTypes.DECIMAL(10, 2),

@@ -99,7 +99,7 @@
               }
             </div>
             <span class="rating-score">{{ averageRating }}</span>
-            <span class="rating-count">({{ reviews.length }} reviews)</span>
+            <span class="rating-count">({{ reviewData.total }} reviews)</span>
             <span class="divider">|</span>
             <span class="sales-count">
               <i class="pi pi-shopping-bag"></i> {{ product.sales || 0 }} sold
@@ -195,7 +195,7 @@
             [class.active]="activeTab === 'reviews'"
             (click)="activeTab = 'reviews'"
           >
-            <i class="pi pi-comments"></i> Reviews ({{ reviews.length }})
+            <i class="pi pi-comments"></i> Reviews ({{ reviewData.total }})
           </button>
         </div>
 
@@ -241,7 +241,7 @@
                       ></i>
                     }
                   </div>
-                  <span class="total-reviews">Based on {{ reviews.length }} reviews</span>
+                  <span class="total-reviews">Based on {{ reviewData.total }} reviews</span>
                 </div>
 
                 <div class="rating-breakdown">
@@ -270,7 +270,7 @@
                   [class.active]="reviewFilter === 0"
                   (click)="setReviewFilter(0)"
                 >
-                  All ({{ reviews.length }})
+                  All ({{ reviewData.total }})
                 </button>
                 @for (star of [5, 4, 3, 2, 1]; track star) {
                   <button
@@ -297,10 +297,16 @@
                   @for (review of filteredReviews; track review.id) {
                     <div class="review-card">
                       <div class="review-header">
-                        <div class="reviewer-avatar">{{ review.avatar }}</div>
+                        <div class="reviewer-avatar">
+                          {{ review.user?.fullName?.charAt(0)?.toUpperCase() || 'U' }}
+                        </div>
                         <div class="reviewer-info">
-                          <span class="reviewer-name">{{ review.author }}</span>
-                          <span class="review-date">{{ review.date }}</span>
+                          <span class="reviewer-name">{{
+                            review.user?.fullName || 'Anonymous'
+                          }}</span>
+                          <span class="review-date">{{
+                            review.createdAt | date: 'MMM d, yyyy'
+                          }}</span>
                         </div>
                         <div class="review-stars">
                           @for (star of getStars(review.rating); track $index) {
@@ -312,7 +318,16 @@
                           }
                         </div>
                       </div>
-                      <p class="review-comment">{{ review.comment }}</p>
+                      @if (review.comment) {
+                        <p class="review-comment">{{ review.comment }}</p>
+                      }
+                      @if (review.images && review.images.length > 0) {
+                        <div class="review-images">
+                          @for (image of review.images; track image.publicId) {
+                            <img [src]="image.url" [alt]="'Review image'" class="review-image" />
+                          }
+                        </div>
+                      }
                     </div>
                   }
                 }

@@ -43,25 +43,25 @@ router.post("/hubs", authorize("admin"), adminController.createHub);
 router.put("/hubs/:hubId", authorize("admin"), adminController.updateHub);
 router.delete("/hubs/:hubId", authorize("admin"), adminController.deleteHub);
 
-// Driver management (admin and hub users)
+// Driver management - ADMIN: READ-ONLY, HUB: Full CRUD
 router.get("/drivers", authorize("admin", "hub"), adminController.getDrivers);
 router.post(
   "/drivers",
-  authorize("admin", "hub"),
+  authorize("hub"), // Only hub can create drivers
   adminController.createDriver,
 );
 router.put(
   "/drivers/:driverId",
-  authorize("admin", "hub"),
+  authorize("hub"), // Only hub can update drivers
   adminController.updateDriver,
 );
 router.delete(
   "/drivers/:driverId",
-  authorize("admin", "hub"),
+  authorize("hub"), // Only hub can delete drivers
   adminController.deleteDriver,
 );
 
-// Deliveries (admin only)
+// Deliveries and Orders - ADMIN: READ-ONLY
 router.get("/deliveries", authorize("admin"), adminController.getAllDeliveries);
 router.get("/orders/search", authorize("admin"), adminController.searchOrders);
 

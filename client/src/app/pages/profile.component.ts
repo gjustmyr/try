@@ -213,6 +213,19 @@ import { OrderService } from '../services/order.service';
                           >Tracking: <strong>{{ order.trackingNumber }}</strong></span
                         >
                       </div>
+                      <div class="order-coupons" *ngIf="order.couponCode">
+                        <i class="pi pi-tag"></i>
+                        <span>{{ order.couponCode }}</span>
+                        <span
+                          class="coupon-savings"
+                          *ngIf="(order.discountAmount || 0) + (order.shippingDiscount || 0) > 0"
+                        >
+                          (Saved ₱{{
+                            (order.discountAmount || 0) + (order.shippingDiscount || 0)
+                              | number: '1.2-2'
+                          }})
+                        </span>
+                      </div>
                       <div
                         class="order-eta"
                         *ngIf="
@@ -952,6 +965,27 @@ import { OrderService } from '../services/order.service';
         color: #5b21b6;
       }
 
+      .order-coupons {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #059669;
+        background: #ecfdf5;
+        padding: 4px 12px;
+        border-radius: 20px;
+        border: 1px solid #a7f3d0;
+      }
+      .order-coupons i {
+        font-size: 14px;
+      }
+      .coupon-savings {
+        font-weight: 700;
+        color: #047857;
+        margin-left: 4px;
+      }
+
       /* Security */
       .security-card {
         background: white;
@@ -1456,6 +1490,17 @@ export class ProfileComponent implements OnInit {
         this.loadingOrders = false;
         if (res.success) {
           this.orders = res.data;
+          // Debug: Log first order with coupon
+          const orderWithCoupon = this.orders.find((o: any) => o.couponCode);
+          if (orderWithCoupon) {
+            console.log('Order with coupon:', {
+              orderNumber: orderWithCoupon.orderNumber,
+              couponCode: orderWithCoupon.couponCode,
+              discountAmount: orderWithCoupon.discountAmount,
+              shippingDiscount: orderWithCoupon.shippingDiscount,
+              total: orderWithCoupon.total,
+            });
+          }
         }
         this.cdr.detectChanges();
       },

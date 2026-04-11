@@ -40,6 +40,23 @@ import { CartService } from '../services/cart.service';
           <span class="product-category">{{ product.category }}</span>
         }
 
+        @if (product.avgRating > 0 || product.totalReviews > 0) {
+          <div class="rating">
+            <div class="stars">
+              @for (star of [1, 2, 3, 4, 5]; track star) {
+                @if (star <= product.avgRating) {
+                  <i class="pi pi-star-fill"></i>
+                } @else if (star - 0.5 <= product.avgRating) {
+                  <i class="pi pi-star-half-fill"></i>
+                } @else {
+                  <i class="pi pi-star"></i>
+                }
+              }
+            </div>
+            <span class="rating-text">{{ product.avgRating }} ({{ product.totalReviews }})</span>
+          </div>
+        }
+
         <div class="price-section">
           <span class="price">₱{{ product.price }}</span>
           @if (product.compareAtPrice && product.compareAtPrice > product.price) {
