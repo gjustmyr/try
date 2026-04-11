@@ -5,6 +5,7 @@ import { SellerRegisterComponent } from './components/seller-register.component'
 import { HomeComponent } from './pages/home.component';
 import { ProductDetailComponent } from './pages/product-detail.component';
 import { CartComponent } from './pages/cart.component';
+import { WishlistComponent } from './pages/wishlist.component';
 import { CheckoutComponent } from './pages/checkout.component';
 import { ShopsComponent } from './pages/shops.component';
 import { ShopDetailComponent } from './pages/shop-detail.component';
@@ -27,6 +28,7 @@ export const routes: Routes = [
   { path: 'profile', component: ProfileComponent, canActivate: [customerGuard] },
   { path: 'product/:id', component: ProductDetailComponent, canActivate: [customerGuard] },
   { path: 'cart', component: CartComponent, canActivate: [customerGuard] },
+  { path: 'wishlist', component: WishlistComponent, canActivate: [customerGuard] },
   { path: 'checkout', component: CheckoutComponent, canActivate: [customerGuard] },
   { path: 'shops', component: ShopsComponent, canActivate: [customerGuard] },
   { path: 'shop/:id', component: ShopDetailComponent, canActivate: [customerGuard] },

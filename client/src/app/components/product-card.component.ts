@@ -1,8 +1,9 @@
-import { Component, Input, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, ChangeDetectorRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { CartService } from '../services/cart.service';
+import { WishlistService } from '../services/wishlist.service';
 
 @Component({
   selector: 'app-product-card',
@@ -18,6 +19,14 @@ import { CartService } from '../services/cart.service';
             <i class="pi pi-image"></i>
           </div>
         }
+        <button
+          class="wishlist-btn"
+          [class.active]="isInWishlist"
+          (click)="toggleWishlist($event)"
+          title="Add to wishlist"
+        >
+          <i class="pi" [class.pi-heart]="!isInWishlist" [class.pi-heart-fill]="isInWishlist"></i>
+        </button>
         @if (product.compareAtPrice && product.compareAtPrice > product.price) {
           <span class="badge badge-sale">sale</span>
         }
@@ -115,6 +124,43 @@ import { CartService } from '../services/cart.service';
         padding-top: 100%;
         overflow: hidden;
         background: #f9fafb;
+      }
+
+      .wishlist-btn {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .wishlist-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .wishlist-btn i {
+        font-size: 18px;
+        color: #6b7280;
+        transition: color 0.2s;
+      }
+
+      .wishlist-btn:hover i {
+        color: #ff6b35;
+      }
+
+      .wishlist-btn.active i {
+        color: #ff6b35;
       }
 
       .product-image {
@@ -311,17 +357,66 @@ import { CartService } from '../services/cart.service';
     `,
   ],
 })
-export class ProductCardComponent {
+export class ProductCardComponent implements OnInit {
   @Input() product: any;
   addingToCart = false;
   cartAdded = false;
+  isInWishlist = false;
 
   constructor(
     private router: Router,
     private authService: AuthService,
     private cartService: CartService,
+    private wishlistService: WishlistService,
     private cdr: ChangeDetectorRef,
   ) {}
+
+  ngOnInit() {
+    // Check if product is in wishlist
+    if (this.product?.id) {
+      this.isInWishlist = this.wishlistService.isInWishlist(this.product.id);
+    }
+
+    // Subscribe to wishlist changes
+    this.wishlistService.wishlistIds$.subscribe(() => {
+      if (this.product?.id) {
+        this.isInWishlist = this.wishlistService.isInWishlist(this.product.id);
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  toggleWishlist(event: Event) {
+    event.stopPropagation();
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
+    if (this.isInWishlist) {
+      // Remove from wishlist
+      this.wishlistService.removeFromWishlist(this.product.id).subscribe({
+        next: () => {
+          this.isInWishlist = false;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Remove from wishlist failed:', err);
+        },
+      });
+    } else {
+      // Add to wishlist
+      this.wishlistService.addToWishlist(this.product.id).subscribe({
+        next: () => {
+          this.isInWishlist = true;
+          this.cdr.detectChanges();
+        },
+        error: (err: any) => {
+          console.error('Add to wishlist failed:', err);
+        },
+      });
+    }
+  }
 
   goToProduct() {
     if (this.product?.id) {

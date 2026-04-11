@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { CartService } from '../services/cart.service';
+import { WishlistService } from '../services/wishlist.service';
 import { ProductService } from '../services/product.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
@@ -126,9 +127,9 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
           </div>
 
           <div class="header-actions">
-            <button class="icon-btn">
+            <button class="icon-btn" (click)="navigate('/wishlist')" *ngIf="currentUser">
               <i class="pi pi-heart"></i>
-              <span class="badge">0</span>
+              <span class="badge">{{ wishlistCount }}</span>
             </button>
             <button class="icon-btn cart-btn" (click)="navigate('/cart')">
               <i class="pi pi-shopping-cart"></i>
@@ -575,6 +576,7 @@ export class NavbarComponent implements OnInit {
   currentUser: any = null;
   showProfileDropdown = false;
   cartCount = 0;
+  wishlistCount = 0;
 
   searchQuery = '';
   searchProducts: any[] = [];
@@ -587,6 +589,7 @@ export class NavbarComponent implements OnInit {
     private router: Router,
     private authService: AuthService,
     private cartService: CartService,
+    private wishlistService: WishlistService,
     private productService: ProductService,
     private elRef: ElementRef,
     private cdr: ChangeDetectorRef,
@@ -597,12 +600,18 @@ export class NavbarComponent implements OnInit {
       this.currentUser = user;
       if (user) {
         this.cartService.refreshCartCount();
+        this.wishlistService.refreshWishlist();
       } else {
         this.cartCount = 0;
+        this.wishlistCount = 0;
       }
     });
     this.cartService.cartCount$.subscribe((count) => {
       this.cartCount = count;
+      this.cdr.detectChanges();
+    });
+    this.wishlistService.wishlistIds$.subscribe((ids) => {
+      this.wishlistCount = ids.size;
       this.cdr.detectChanges();
     });
 

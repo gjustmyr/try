@@ -2,6 +2,7 @@ const User = require("./user.model");
 const Seller = require("./seller.model");
 const Product = require("./product.model");
 const Cart = require("./cart.model");
+const Wishlist = require("./wishlist.model");
 const Address = require("./address.model");
 const { Order, OrderItem } = require("./order.model");
 const Review = require("./review.model");
@@ -62,6 +63,29 @@ Product.hasMany(Cart, {
 });
 
 Cart.belongsTo(Product, {
+  foreignKey: "productId",
+  as: "product",
+});
+
+// Wishlist associations
+User.hasMany(Wishlist, {
+  foreignKey: "userId",
+  as: "wishlistItems",
+  onDelete: "CASCADE",
+});
+
+Wishlist.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+Product.hasMany(Wishlist, {
+  foreignKey: "productId",
+  as: "wishlistEntries",
+  onDelete: "CASCADE",
+});
+
+Wishlist.belongsTo(Product, {
   foreignKey: "productId",
   as: "product",
 });
@@ -298,4 +322,5 @@ module.exports = {
   TaxConfig,
   Coupon,
   CouponUsage,
+  Wishlist,
 };
