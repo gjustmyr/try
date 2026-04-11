@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
   providedIn: 'root',
 })
 export class TaxService {
-  private apiUrl = environment.apiUrl || 'http://localhost:8000/api';
+  private apiUrl = environment.apiUrl;
 
   constructor(
     private http: HttpClient,

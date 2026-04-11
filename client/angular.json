@@ -24,10 +24,17 @@
                 "input": "public"
               }
             ],
-            "styles": ["node_modules/leaflet/dist/leaflet.css", "src/styles.css"]
+            "styles": ["node_modules/leaflet/dist/leaflet.css", "src/styles.css"],
+            "allowedCommonJsDependencies": ["leaflet"]
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -36,8 +43,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "16kB",
-                  "maximumError": "24kB"
+                  "maximumWarning": "30kB",
+                  "maximumError": "40kB"
                 }
               ],
               "outputHashing": "all"

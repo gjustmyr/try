@@ -8,7 +8,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class WishlistService {
-  private apiUrl = environment.apiUrl || 'http://localhost:8000/api';
+  private apiUrl = environment.apiUrl;
   private wishlistIds = new BehaviorSubject<Set<string>>(new Set());
   public wishlistIds$ = this.wishlistIds.asObservable();
 

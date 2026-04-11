@@ -8,6 +8,7 @@ import { AddressService } from '../services/address.service';
 import { OrderService } from '../services/order.service';
 import { CartService } from '../services/cart.service';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../environments/environment';
 import * as L from 'leaflet';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -1447,7 +1448,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   loadTaxConfig() {
     // Call tax API to get active tax configuration
-    fetch('http://localhost:8000/api/tax/active')
+    fetch(`${environment.apiUrl}/tax/active`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
@@ -1460,7 +1461,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   loadAvailableVouchers() {
     this.loadingVouchers = true;
-    fetch('http://localhost:8000/api/coupons/active')
+    fetch(`${environment.apiUrl}/coupons/active`)
       .then((res) => res.json())
       .then((data) => {
         this.loadingVouchers = false;
@@ -1607,7 +1608,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.cdr.detectChanges();
 
     const token = this.authService.getToken();
-    fetch('http://localhost:8000/api/coupons/validate', {
+    fetch(`${environment.apiUrl}/coupons/validate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { HubService } from '../services/hub.service';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-hub-dashboard',
@@ -1362,7 +1363,7 @@ export class HubDashboardComponent implements OnInit {
     // Use admin API to get drivers (reusing hub service for available hubs, but we need admin service)
     // For simplicity, load all hubs' drivers through a fetch
     const token = localStorage.getItem('token');
-    fetch('http://localhost:8000/api/admin/drivers', {
+    fetch(`${environment.apiUrl.replace('/api', '')}/api/admin/drivers`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -1457,7 +1458,7 @@ export class HubDashboardComponent implements OnInit {
     if (!this.selectedHubId) return;
     this.loadingDrivers = true;
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:8000/api/admin/drivers`, {
+    fetch(`${environment.apiUrl.replace('/api', '')}/api/admin/drivers`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -1544,9 +1545,10 @@ export class HubDashboardComponent implements OnInit {
       hubId: this.selectedHubId, // Assign to current hub
     };
 
+    const baseUrl = environment.apiUrl.replace('/api', '');
     const url = this.editingDriverId
-      ? `http://localhost:8000/api/admin/drivers/${this.editingDriverId}`
-      : `http://localhost:8000/api/admin/drivers`;
+      ? `${baseUrl}/api/admin/drivers/${this.editingDriverId}`
+      : `${baseUrl}/api/admin/drivers`;
 
     const method = this.editingDriverId ? 'PUT' : 'POST';
 
@@ -1587,7 +1589,7 @@ export class HubDashboardComponent implements OnInit {
       return;
 
     const token = localStorage.getItem('token');
-    fetch(`http://localhost:8000/api/admin/drivers/${driver.id}`, {
+    fetch(`${environment.apiUrl.replace('/api', '')}/api/admin/drivers/${driver.id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

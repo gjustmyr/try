@@ -7,7 +7,7 @@ import { environment } from '../../environments/environment';
   providedIn: 'root',
 })
 export class CartService {
-  private apiUrl = environment.apiUrl || 'http://localhost:8000/api';
+  private apiUrl = environment.apiUrl;
   private cartCountSubject = new BehaviorSubject<number>(0);
   public cartCount$ = this.cartCountSubject.asObservable();
 
