@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { OrderService } from '../services/order.service';
-import { HubService } from '../services/hub.service';
 
 @Component({
   selector: 'app-seller-orders',
@@ -67,7 +66,7 @@ import { HubService } from '../services/hub.service';
               <span class="stat-pill pending">{{ getCount('pending') }} Pending</span>
               <span class="stat-pill processing">{{ getCount('processing') }} Processing</span>
               <span class="stat-pill shipped"
-                >{{ getCount('pending_drop_off') + getCount('shipped') }} Shipping</span
+                >{{ getCount('shipped') }} Shipping</span
               >
             </div>
           </div>
@@ -159,19 +158,11 @@ import { HubService } from '../services/hub.service';
                     <span class="eta-badge na" *ngIf="order.status === 'cancelled'">—</span>
                   </td>
                   <td class="actions-cell" (click)="$event.stopPropagation()">
-                    <button
-                      class="hub-dropoff-btn"
-                      *ngIf="order.status === 'processing'"
-                      (click)="openHubModal(order)"
-                    >
-                      <i class="pi pi-building"></i> Drop off at Hub
-                    </button>
                     <select
                       class="status-select"
                       [ngModel]="order.status"
                       (ngModelChange)="changeStatus(order, $event)"
                       *ngIf="
-                        order.status !== 'pending_drop_off' &&
                         order.status !== 'shipped' &&
                         order.status !== 'out_for_delivery' &&
                         order.status !== 'delivered' &&
@@ -188,8 +179,8 @@ import { HubService } from '../services/hub.service';
                         Cancelled
                       </option>
                     </select>
-                    <span class="hub-status-label" *ngIf="order.status === 'pending_drop_off'"
-                      ><i class="pi pi-clock"></i> Awaiting Hub</span
+                    <span class="hub-status-label processing" *ngIf="order.status === 'processing'"
+                      ><i class="pi pi-box"></i> Ready for Hub</span
                     >
                     <span class="hub-status-label shipped" *ngIf="order.status === 'shipped'"
                       ><i class="pi pi-truck"></i> In Hub System</span
@@ -339,50 +330,6 @@ import { HubService } from '../services/hub.service';
             (click)="confirmStatusChange()"
           >
             {{ pendingNewStatus === 'cancelled' ? 'Yes, Cancel Order' : 'Confirm' }}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Hub Selection Modal -->
-    <div class="modal-overlay" *ngIf="showHubModal">
-      <div class="modal-box hub-modal">
-        <div class="modal-icon" data-type="info"><i class="pi pi-building"></i></div>
-        <h3>Select Drop-off Hub</h3>
-        <p>
-          Choose the nearest hub to drop off the parcel for order
-          <strong>{{ hubModalOrder?.orderNumber }}</strong>
-        </p>
-        <div class="hub-list" *ngIf="availableHubs.length > 0">
-          <div
-            class="hub-option"
-            *ngFor="let hub of availableHubs"
-            [class.selected]="selectedHubId === hub.id"
-            (click)="selectedHubId = hub.id"
-          >
-            <div class="hub-radio">
-              <div class="radio-dot" *ngIf="selectedHubId === hub.id"></div>
-            </div>
-            <div class="hub-info">
-              <span class="hub-name">{{ hub.name }}</span>
-              <span class="hub-addr">{{ hub.address }}, {{ hub.city }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="empty-state" *ngIf="availableHubs.length === 0 && !hubsLoading">
-          <p>No hubs available. Contact admin.</p>
-        </div>
-        <div class="loading-state" *ngIf="hubsLoading">
-          <i class="pi pi-spin pi-spinner"></i> Loading hubs...
-        </div>
-        <div class="modal-actions">
-          <button class="modal-btn secondary" (click)="closeHubModal()">Cancel</button>
-          <button
-            class="modal-btn primary"
-            (click)="confirmDropOff()"
-            [disabled]="!selectedHubId || droppingOff"
-          >
-            {{ droppingOff ? 'Processing...' : 'Confirm Drop-off' }}
           </button>
         </div>
       </div>
@@ -1158,26 +1105,18 @@ export class SellerOrdersComponent implements OnInit {
     { key: 'pending', label: 'Pending' },
     { key: 'confirmed', label: 'Confirmed' },
     { key: 'processing', label: 'Processing' },
-    { key: 'pending_drop_off', label: 'Awaiting Hub' },
     { key: 'shipped', label: 'Shipped' },
     { key: 'out_for_delivery', label: 'Out for Delivery' },
     { key: 'delivered', label: 'Delivered' },
     { key: 'cancelled', label: 'Cancelled' },
   ];
 
-  // Hub modal state
-  showHubModal = false;
-  hubModalOrder: any = null;
-  availableHubs: any[] = [];
-  selectedHubId = '';
-  hubsLoading = false;
-  droppingOff = false;
+  // Hub modal state — removed, hub admin handles receiving now
 
   constructor(
     private router: Router,
     private authService: AuthService,
     private orderService: OrderService,
-    private hubService: HubService,
     private cdr: ChangeDetectorRef,
   ) {}
 
@@ -1307,54 +1246,6 @@ export class SellerOrdersComponent implements OnInit {
       },
       error: (err: any) => {
         order.status = oldStatus;
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  openHubModal(order: any) {
-    this.hubModalOrder = order;
-    this.selectedHubId = '';
-    this.showHubModal = true;
-    this.hubsLoading = true;
-    this.hubService.getAvailableHubs().subscribe({
-      next: (res: any) => {
-        this.hubsLoading = false;
-        if (res.success) this.availableHubs = res.data;
-        this.cdr.detectChanges();
-      },
-      error: () => {
-        this.hubsLoading = false;
-        this.availableHubs = [];
-        this.cdr.detectChanges();
-      },
-    });
-  }
-
-  closeHubModal() {
-    this.showHubModal = false;
-    this.hubModalOrder = null;
-    this.selectedHubId = '';
-    this.availableHubs = [];
-    this.droppingOff = false;
-  }
-
-  confirmDropOff() {
-    if (!this.selectedHubId || !this.hubModalOrder) return;
-    this.droppingOff = true;
-    this.hubService.sellerDropOff(this.hubModalOrder.id, this.selectedHubId).subscribe({
-      next: (res: any) => {
-        this.droppingOff = false;
-        if (res.success) {
-          this.hubModalOrder.status = 'pending_drop_off';
-          this.closeHubModal();
-          this.loadOrders();
-        }
-        this.cdr.detectChanges();
-      },
-      error: (err: any) => {
-        this.droppingOff = false;
-        alert(err.error?.message || 'Drop-off failed');
         this.cdr.detectChanges();
       },
     });

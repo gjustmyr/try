@@ -15,17 +15,17 @@ export class HubService {
     return this.http.get(`${this.apiUrl}/hub/available`);
   }
 
-  sellerDropOff(orderId: string, hubId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/hub/drop-off`, { orderId, hubId });
+  searchProcessingOrders(query: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/hub/orders/search?q=${encodeURIComponent(query)}`);
+  }
+
+  receiveFromSeller(hubId: string, orderId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/hub/${hubId}/receive-order`, { orderId });
   }
 
   getHubParcels(hubId: string, status?: string): Observable<any> {
     const params = status && status !== 'all' ? `?status=${status}` : '';
     return this.http.get(`${this.apiUrl}/hub/${hubId}/parcels${params}`);
-  }
-
-  receiveParcel(deliveryId: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/hub/parcels/${deliveryId}/receive`, {});
   }
 
   dispatchToHub(deliveryId: string, driverId?: string): Observable<any> {

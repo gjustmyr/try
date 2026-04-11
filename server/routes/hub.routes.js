@@ -3,27 +3,27 @@ const router = express.Router();
 const hubController = require("../controllers/hub.controller");
 const { authenticate, authorize } = require("../middleware/auth");
 
-// Seller endpoints
-router.post(
-	"/drop-off",
-	authenticate,
-	authorize("seller"),
-	hubController.sellerDropOff,
-);
+// Public hub list
 router.get("/available", authenticate, hubController.getAvailableHubs);
 
 // Admin hub operations
+router.get(
+	"/orders/search",
+	authenticate,
+	authorize("admin"),
+	hubController.searchProcessingOrders,
+);
+router.post(
+	"/:hubId/receive-order",
+	authenticate,
+	authorize("admin"),
+	hubController.receiveFromSeller,
+);
 router.get(
 	"/:hubId/parcels",
 	authenticate,
 	authorize("admin"),
 	hubController.getHubParcels,
-);
-router.put(
-	"/parcels/:deliveryId/receive",
-	authenticate,
-	authorize("admin"),
-	hubController.receiveParcel,
 );
 router.put(
 	"/parcels/:deliveryId/dispatch",

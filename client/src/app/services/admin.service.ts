@@ -82,8 +82,8 @@ export class AdminService {
     return this.http.get(`${this.apiUrl}/admin/deliveries${params}`);
   }
 
-  assignDelivery(data: { orderId: string; driverId: string; hubId: string }): Observable<any> {
-    return this.http.post(`${this.apiUrl}/deliveries/assign`, data);
+  assignDelivery(data: { orderId: string; hubId: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/hub/${data.hubId}/receive-order`, { orderId: data.orderId });
   }
 
   searchOrders(query: string): Observable<any> {

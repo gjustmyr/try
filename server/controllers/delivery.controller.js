@@ -153,6 +153,7 @@ exports.getTracking = async (req, res) => {
 						"id",
 						"orderNumber",
 						"status",
+						"total",
 						"estimatedDelivery",
 						"createdAt",
 					],
@@ -181,6 +182,7 @@ exports.getTracking = async (req, res) => {
 						"fullName",
 						"phone",
 						"vehicleType",
+						"plateNumber",
 						"currentLatitude",
 						"currentLongitude",
 					],
@@ -188,12 +190,12 @@ exports.getTracking = async (req, res) => {
 				{
 					model: DeliveryHub,
 					as: "hub",
-					attributes: ["id", "name", "address", "latitude", "longitude"],
+					attributes: ["id", "name", "address", "city", "province", "latitude", "longitude"],
 				},
 				{
 					model: DeliveryHub,
 					as: "destinationHub",
-					attributes: ["id", "name", "address", "latitude", "longitude"],
+					attributes: ["id", "name", "address", "city", "province", "latitude", "longitude"],
 				},
 			],
 		});

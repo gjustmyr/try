@@ -346,7 +346,7 @@ import * as L from 'leaflet';
             </div>
             <div class="top-bar-right">
               <button class="primary-btn" (click)="showAssignModal = true; resetAssignForm()">
-                <i class="pi pi-plus"></i> Assign Delivery
+                <i class="pi pi-plus"></i> Receive Parcel
               </button>
             </div>
           </header>
@@ -509,10 +509,10 @@ import * as L from 'leaflet';
       </div>
     </div>
 
-    <!-- ============ ASSIGN DELIVERY MODAL ============ -->
+    <!-- ============ RECEIVE PARCEL MODAL ============ -->
     <div class="modal-overlay" *ngIf="showAssignModal">
       <div class="modal-box form-modal">
-        <h3>Assign Delivery</h3>
+        <h3>Receive Parcel</h3>
         <div class="form-grid">
           <div class="form-group full">
             <label>Search Order</label>
@@ -546,28 +546,19 @@ import * as L from 'leaflet';
               </button>
             </div>
           </div>
-          <div class="form-group">
-            <label>Hub</label>
+          <div class="form-group full">
+            <label>Receiving Hub</label>
             <select [(ngModel)]="assignForm.hubId">
               <option value="">Select hub</option>
               <option *ngFor="let h of hubs" [value]="h.id">{{ h.name }} — {{ h.city }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Driver</label>
-            <select [(ngModel)]="assignForm.driverId">
-              <option value="">Select driver</option>
-              <option *ngFor="let d of availableDrivers" [value]="d.id">
-                {{ d.fullName }} ({{ d.vehicleType }})
-              </option>
             </select>
           </div>
         </div>
         <p class="error-msg" *ngIf="assignError">{{ assignError }}</p>
         <div class="modal-actions">
           <button class="modal-btn secondary" (click)="showAssignModal = false; clearAssignModal()">Cancel</button>
-          <button class="modal-btn primary" (click)="assignDelivery()" [disabled]="assigning || !assignForm.orderId">
-            Assign
+          <button class="modal-btn primary" (click)="assignDelivery()" [disabled]="assigning || !assignForm.orderId || !assignForm.hubId">
+            {{ assigning ? 'Receiving...' : 'Receive & Generate Tracking' }}
           </button>
         </div>
       </div>
@@ -1182,7 +1173,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   deliveryFilter = 'all';
   deliveryFilters = ['all', 'assigned', 'picked_up', 'in_transit', 'delivered', 'failed'];
   showAssignModal = false;
-  assignForm: any = { orderId: '', hubId: '', driverId: '' };
+  assignForm: any = { orderId: '', hubId: '' };
   assignError = '';
   assigning = false;
   orderSearchQuery = '';
@@ -1513,7 +1504,7 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
   }
 
   resetAssignForm() {
-    this.assignForm = { orderId: '', hubId: '', driverId: '' };
+    this.assignForm = { orderId: '', hubId: '' };
     this.assignError = '';
     this.orderSearchQuery = '';
     this.orderSearchResults = [];
@@ -1574,13 +1565,14 @@ export class AdminDashboardComponent implements OnInit, OnDestroy {
         this.assigning = false;
         if (res.success) {
           this.showAssignModal = false;
+          this.clearAssignModal();
           this.loadDeliveries();
         } else this.assignError = res.message;
         this.cdr.detectChanges();
       },
       error: (err: any) => {
         this.assigning = false;
-        this.assignError = err.error?.message || 'Failed to assign';
+        this.assignError = err.error?.message || 'Failed to receive parcel';
         this.cdr.detectChanges();
       },
     });

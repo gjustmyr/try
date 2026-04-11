@@ -30,16 +30,16 @@ import { HubService } from '../services/hub.service';
           <a
             class="nav-item"
             [class.active]="activeTab === 'parcels'"
-            (click)="activeTab = 'parcels'"
+            (click)="activeTab = 'parcels'; filterStatus = ''; loadParcels()"
           >
             <i class="pi pi-box"></i> <span>All Parcels</span>
           </a>
           <a
             class="nav-item"
-            [class.active]="activeTab === 'pending'"
-            (click)="activeTab = 'pending'; filterStatus = 'pending_drop_off'; loadParcels()"
+            [class.active]="activeTab === 'receive'"
+            (click)="activeTab = 'receive'; openReceiveModal()"
           >
-            <i class="pi pi-clock"></i> <span>Pending Drop-offs</span>
+            <i class="pi pi-plus-circle"></i> <span>Receive Parcel</span>
           </a>
           <a
             class="nav-item"
@@ -91,7 +91,6 @@ import { HubService } from '../services/hub.service';
           </div>
           <div class="top-bar-right" *ngIf="selectedHubId">
             <div class="stat-pills">
-              <span class="pill pending">{{ getStatusCount('pending_drop_off') }} Pending</span>
               <span class="pill received">{{ getStatusCount('received_at_hub') }} Received</span>
               <span class="pill transit">{{ getStatusCount('in_transit') }} Transit</span>
               <span class="pill dest">{{ getStatusCount('at_destination_hub') }} At Hub</span>
@@ -183,16 +182,6 @@ import { HubService } from '../services/hub.service';
 
               <!-- Actions -->
               <div class="parcel-actions">
-                <!-- Receive from seller -->
-                <button
-                  class="action-btn receive"
-                  *ngIf="p.status === 'pending_drop_off'"
-                  (click)="receiveParcel(p)"
-                  [disabled]="p._loading"
-                >
-                  <i class="pi pi-check"></i> Receive Parcel
-                </button>
-
                 <!-- Dispatch to destination hub -->
                 <button
                   class="action-btn dispatch"
@@ -294,6 +283,72 @@ import { HubService } from '../services/hub.service';
           <button class="modal-btn secondary" (click)="showAssign = false">Cancel</button>
           <button class="modal-btn primary" (click)="assignRider()" [disabled]="!selectedRiderId">
             Assign
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receive Parcel Modal -->
+    <div class="modal-overlay" *ngIf="showReceive">
+      <div class="modal-box" style="max-width: 520px">
+        <h3><i class="pi pi-plus-circle"></i> Receive Parcel from Seller</h3>
+        <p>Search for a processing order to receive at this hub.</p>
+        <div class="form-group">
+          <label>Search Order Number</label>
+          <input
+            type="text"
+            class="search-input"
+            [(ngModel)]="receiveSearchQuery"
+            (input)="searchProcessingOrders()"
+            placeholder="Type order number (e.g. MS-...)  "
+            autocomplete="off"
+          />
+        </div>
+        <div class="receive-results" *ngIf="receiveSearchResults.length > 0 && !receiveSelectedOrder">
+          <div
+            class="receive-result-item"
+            *ngFor="let o of receiveSearchResults"
+            (click)="selectReceiveOrder(o)"
+          >
+            <div class="result-order-num">{{ o.orderNumber }}</div>
+            <div class="result-meta">
+              {{ o.user?.fullName }} — {{ o.items?.length || 0 }} item(s) —
+              ₱{{ o.total }}
+            </div>
+            <div class="result-meta" *ngIf="o.address">
+              {{ o.address.city }}, {{ o.address.province }}
+            </div>
+          </div>
+        </div>
+        <div class="receive-no-results" *ngIf="receiveSearchQuery.length >= 2 && receiveSearchResults.length === 0 && !receiveSearching && !receiveSelectedOrder">
+          No processing orders found.
+        </div>
+        <div class="receive-selected" *ngIf="receiveSelectedOrder">
+          <div class="selected-header">
+            <strong>{{ receiveSelectedOrder.orderNumber }}</strong>
+            <button class="clear-btn" (click)="clearReceiveOrder()">✕</button>
+          </div>
+          <div class="selected-details">
+            <div>Customer: {{ receiveSelectedOrder.user?.fullName }}</div>
+            <div>Total: ₱{{ receiveSelectedOrder.total }}</div>
+            <div *ngIf="receiveSelectedOrder.items?.length">
+              Seller: {{ receiveSelectedOrder.items[0]?.seller?.shopName }}
+            </div>
+            <div *ngIf="receiveSelectedOrder.address">
+              Deliver to: {{ receiveSelectedOrder.address.streetAddress }},
+              {{ receiveSelectedOrder.address.barangay }},
+              {{ receiveSelectedOrder.address.city }}
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="modal-btn secondary" (click)="closeReceiveModal()">Cancel</button>
+          <button
+            class="modal-btn primary"
+            (click)="confirmReceive()"
+            [disabled]="!receiveSelectedOrder || receiving"
+          >
+            {{ receiving ? 'Receiving...' : 'Receive & Generate Tracking' }}
           </button>
         </div>
       </div>
@@ -777,6 +832,86 @@ import { HubService } from '../services/hub.service';
         cursor: not-allowed;
       }
 
+      /* Receive modal */
+      .search-input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: #ff6b35;
+        box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+      }
+      .receive-results {
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-top: 8px;
+      }
+      .receive-result-item {
+        padding: 10px 14px;
+        cursor: pointer;
+        border-bottom: 1px solid #f3f4f6;
+        transition: background 0.1s;
+      }
+      .receive-result-item:last-child { border-bottom: none; }
+      .receive-result-item:hover { background: #fff7ed; }
+      .result-order-num {
+        font-family: monospace;
+        font-weight: 700;
+        font-size: 14px;
+        color: #1f2937;
+      }
+      .result-meta {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+      .receive-no-results {
+        text-align: center;
+        padding: 16px;
+        color: #9ca3af;
+        font-size: 13px;
+      }
+      .receive-selected {
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 10px;
+        padding: 14px;
+        margin-top: 12px;
+      }
+      .selected-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .selected-header strong {
+        font-family: monospace;
+        font-size: 15px;
+        color: #166534;
+      }
+      .clear-btn {
+        background: none;
+        border: none;
+        font-size: 16px;
+        color: #9ca3af;
+        cursor: pointer;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .clear-btn:hover { color: #dc2626; background: #fee2e2; }
+      .selected-details {
+        font-size: 13px;
+        color: #374151;
+        line-height: 1.6;
+      }
+
       @media (max-width: 768px) {
         .hub-sidebar {
           width: 60px;
@@ -815,6 +950,15 @@ export class HubDashboardComponent implements OnInit {
   selectedDriverId = '';
   selectedRiderId = '';
   availableDrivers: any[] = [];
+
+  // Receive modal state
+  showReceive = false;
+  receiveSearchQuery = '';
+  receiveSearchResults: any[] = [];
+  receiveSelectedOrder: any = null;
+  receiveSearching = false;
+  receiving = false;
+  receiveSearchTimeout: any = null;
 
   constructor(
     private router: Router,
@@ -895,19 +1039,76 @@ export class HubDashboardComponent implements OnInit {
   }
 
   receiveParcel(p: any) {
-    p._loading = true;
-    this.hubService.receiveParcel(p.id).subscribe({
+    // Legacy — no longer used
+  }
+
+  openReceiveModal() {
+    this.showReceive = true;
+    this.receiveSearchQuery = '';
+    this.receiveSearchResults = [];
+    this.receiveSelectedOrder = null;
+    this.receiving = false;
+  }
+
+  closeReceiveModal() {
+    this.showReceive = false;
+    this.receiveSearchQuery = '';
+    this.receiveSearchResults = [];
+    this.receiveSelectedOrder = null;
+    this.receiving = false;
+    this.activeTab = 'parcels';
+  }
+
+  searchProcessingOrders() {
+    if (this.receiveSearchTimeout) clearTimeout(this.receiveSearchTimeout);
+    if (this.receiveSearchQuery.length < 2) {
+      this.receiveSearchResults = [];
+      return;
+    }
+    this.receiveSearching = true;
+    this.receiveSearchTimeout = setTimeout(() => {
+      this.hubService.searchProcessingOrders(this.receiveSearchQuery).subscribe({
+        next: (res: any) => {
+          this.receiveSearching = false;
+          if (res.success) this.receiveSearchResults = res.data;
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.receiveSearching = false;
+          this.receiveSearchResults = [];
+          this.cdr.detectChanges();
+        },
+      });
+    }, 300);
+  }
+
+  selectReceiveOrder(order: any) {
+    this.receiveSelectedOrder = order;
+    this.receiveSearchResults = [];
+  }
+
+  clearReceiveOrder() {
+    this.receiveSelectedOrder = null;
+    this.receiveSearchQuery = '';
+    this.receiveSearchResults = [];
+  }
+
+  confirmReceive() {
+    if (!this.receiveSelectedOrder || !this.selectedHubId) return;
+    this.receiving = true;
+    this.hubService.receiveFromSeller(this.selectedHubId, this.receiveSelectedOrder.id).subscribe({
       next: (res: any) => {
-        p._loading = false;
+        this.receiving = false;
         if (res.success) {
-          p.status = 'received_at_hub';
-          p.trackingNumber = res.data.trackingNumber;
-          p.qrCode = res.data.qrCode;
+          alert(`Parcel received! Tracking: ${res.data.trackingNumber}`);
+          this.closeReceiveModal();
+          this.loadParcels();
         }
         this.cdr.detectChanges();
       },
-      error: () => {
-        p._loading = false;
+      error: (err: any) => {
+        this.receiving = false;
+        alert(err.error?.message || 'Failed to receive parcel');
         this.cdr.detectChanges();
       },
     });

@@ -44,33 +44,19 @@ function findNearestHub(hubs, lat, lng) {
 	return nearest;
 }
 
-// ============ SELLER DROP-OFF ============
+// ============ HUB RECEIVE FROM SELLER ============
 
-// Seller initiates drop-off at hub (creates Delivery with pending_drop_off)
-exports.sellerDropOff = async (req, res) => {
+// Hub admin receives parcel directly from seller (creates Delivery + generates tracking + QR in one step)
+exports.receiveFromSeller = async (req, res) => {
 	const t = await sequelize.transaction();
 	try {
-		const { orderId, hubId } = req.body;
+		const { orderId } = req.body;
+		const { hubId } = req.params;
 		if (!orderId || !hubId) {
 			return res
 				.status(400)
 				.json({ success: false, message: "orderId and hubId are required" });
 		}
-
-		// Verify seller owns items in this order
-		const seller = await Seller.findOne({ where: { userId: req.user.id } });
-		if (!seller)
-			return res
-				.status(403)
-				.json({ success: false, message: "Seller not found" });
-
-		const hasItems = await OrderItem.findOne({
-			where: { orderId, sellerId: seller.id },
-		});
-		if (!hasItems)
-			return res
-				.status(404)
-				.json({ success: false, message: "Order not found" });
 
 		const order = await Order.findByPk(orderId, {
 			include: [{ model: Address, as: "address" }],
@@ -85,7 +71,7 @@ exports.sellerDropOff = async (req, res) => {
 				.status(400)
 				.json({
 					success: false,
-					message: "Order must be in 'processing' status to drop off at hub",
+					message: "Order must be in 'processing' status",
 				});
 		}
 
@@ -114,19 +100,40 @@ exports.sellerDropOff = async (req, res) => {
 			);
 			if (destHub) destinationHubId = destHub.id;
 		}
-		// If no other hub found or same city, use origin hub as destination too
 		if (!destinationHubId) destinationHubId = originHub.id;
 
 		const destAddr = order.address
 			? `${order.address.streetAddress}, ${order.address.barangay}, ${order.address.city}, ${order.address.province}`
 			: "";
 
+		// Generate tracking number
+		const trackingNumber =
+			"TRK-" +
+			Date.now().toString(36).toUpperCase() +
+			Math.random().toString(36).substring(2, 5).toUpperCase();
+
+		// Generate QR secret + QR code
+		const qrSecret = crypto.randomBytes(16).toString("hex");
+		const qrData = JSON.stringify({
+			orderId: order.id,
+			trackingNumber,
+			secret: qrSecret,
+		});
+		const qrCodeImage = await QRCode.toDataURL(qrData, {
+			width: 300,
+			margin: 2,
+		});
+
+		// Create delivery record (already received)
 		const delivery = await Delivery.create(
 			{
 				orderId,
 				hubId: originHub.id,
 				destinationHubId,
-				status: "pending_drop_off",
+				status: "received_at_hub",
+				trackingNumber,
+				qrCode: qrCodeImage,
+				qrSecret,
 				destinationLatitude: order.address?.latitude || null,
 				destinationLongitude: order.address?.longitude || null,
 				destinationAddress: destAddr,
@@ -136,21 +143,36 @@ exports.sellerDropOff = async (req, res) => {
 			{ transaction: t },
 		);
 
+		// Update order status to shipped
+		const estimatedDelivery = new Date();
+		estimatedDelivery.setDate(estimatedDelivery.getDate() + 5);
+		await order.update(
+			{
+				status: "shipped",
+				trackingNumber,
+				estimatedDelivery,
+			},
+			{ transaction: t },
+		);
+
 		await t.commit();
 
-		res
-			.status(201)
-			.json({
-				success: true,
-				message: "Drop-off initiated. Bring your parcel to the hub.",
-				data: delivery,
-			});
+		res.status(201).json({
+			success: true,
+			message: "Parcel received. Tracking number and QR code generated.",
+			data: {
+				id: delivery.id,
+				trackingNumber,
+				qrCode: qrCodeImage,
+				status: "received_at_hub",
+			},
+		});
 	} catch (error) {
 		await t.rollback();
-		console.error("Seller drop-off error:", error);
+		console.error("Receive from seller error:", error);
 		res
 			.status(500)
-			.json({ success: false, message: "Failed to initiate drop-off" });
+			.json({ success: false, message: "Failed to receive parcel" });
 	}
 };
 
@@ -175,6 +197,56 @@ exports.getAvailableHubs = async (req, res) => {
 	} catch (error) {
 		console.error("Get available hubs error:", error);
 		res.status(500).json({ success: false, message: "Failed to get hubs" });
+	}
+};
+
+// Search processing orders for hub admin to receive
+exports.searchProcessingOrders = async (req, res) => {
+	try {
+		const { q } = req.query;
+		if (!q || q.length < 2) {
+			return res.json({ success: true, data: [] });
+		}
+
+		const orders = await Order.findAll({
+			where: {
+				status: "processing",
+				orderNumber: { [Op.iLike]: `%${q}%` },
+			},
+			include: [
+				{
+					model: User,
+					as: "user",
+					attributes: ["id", "fullName", "email"],
+				},
+				{ model: Address, as: "address" },
+				{
+					model: OrderItem,
+					as: "items",
+					include: [
+						{ model: Seller, as: "seller", attributes: ["id", "shopName"] },
+					],
+				},
+			],
+			limit: 10,
+			order: [["createdAt", "DESC"]],
+		});
+
+		// Filter out orders that already have a delivery
+		const orderIds = orders.map((o) => o.id);
+		const existingDeliveries = await Delivery.findAll({
+			where: { orderId: orderIds },
+			attributes: ["orderId"],
+		});
+		const deliveredOrderIds = new Set(existingDeliveries.map((d) => d.orderId));
+		const available = orders.filter((o) => !deliveredOrderIds.has(o.id));
+
+		res.json({ success: true, data: available });
+	} catch (error) {
+		console.error("Search processing orders error:", error);
+		res
+			.status(500)
+			.json({ success: false, message: "Failed to search orders" });
 	}
 };
 
