@@ -7,8 +7,6 @@ client/.angular/
 
 # Environment files
 server/.env
-client/src/environments/environment.ts
-client/src/environments/environment.prod.ts
 
 # Uploads
 server/uploads/temp/*
