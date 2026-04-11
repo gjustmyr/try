@@ -44,6 +44,7 @@ const Delivery = sequelize.define(
             "pending_drop_off",
             "received_at_hub",
             "in_transit",
+            "pending_hub_confirmation",
             "at_destination_hub",
             "out_for_delivery",
             "delivered",

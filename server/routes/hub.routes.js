@@ -25,6 +25,12 @@ router.get(
   authorize("admin", "hub"),
   hubController.getHubParcels,
 );
+router.get(
+  "/:hubId/drivers",
+  authenticate,
+  authorize("admin", "hub"),
+  hubController.getAvailableDrivers,
+);
 router.put(
   "/parcels/:deliveryId/dispatch",
   authenticate,

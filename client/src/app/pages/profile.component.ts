@@ -257,11 +257,7 @@ import { OrderService } from '../services/order.service';
                       </div>
                       <button
                         class="track-btn"
-                        *ngIf="
-                          order.status === 'shipped' ||
-                          order.status === 'processing' ||
-                          order.status === 'confirmed'
-                        "
+                        *ngIf="order.status !== 'cancelled'"
                         (click)="trackOrder(order.id)"
                       >
                         <i class="pi pi-map-marker"></i> Track Order

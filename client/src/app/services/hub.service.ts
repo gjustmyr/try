@@ -33,8 +33,8 @@ export class HubService {
     return this.http.put(`${this.apiUrl}/hub/parcels/${deliveryId}/dispatch`, body);
   }
 
-  arriveAtHub(deliveryId: string): Observable<any> {
-    return this.http.put(`${this.apiUrl}/hub/parcels/${deliveryId}/arrive`, {});
+  arriveAtHub(deliveryId: string, hubId: string): Observable<any> {
+    return this.http.put(`${this.apiUrl}/hub/parcels/${deliveryId}/arrive`, { hubId });
   }
 
   assignRider(deliveryId: string, driverId: string): Observable<any> {

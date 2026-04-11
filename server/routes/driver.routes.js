@@ -10,8 +10,12 @@ router.get("/profile", driverController.getProfile);
 router.get("/stats", driverController.getStats);
 router.get("/deliveries", driverController.getMyDeliveries);
 router.put(
-	"/deliveries/:deliveryId/status",
-	driverController.updateDeliveryStatus,
+  "/deliveries/:deliveryId/status",
+  driverController.updateDeliveryStatus,
+);
+router.put(
+  "/deliveries/:deliveryId/report-arrival",
+  driverController.reportHubArrival,
 );
 router.post("/scan-delivery", driverController.scanDelivery);
 router.put("/location", driverController.updateLocation);

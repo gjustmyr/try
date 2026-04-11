@@ -91,25 +91,40 @@ exports.updateDeliveryStatus = async (req, res) => {
 
     const delivery = await Delivery.findOne({
       where: { id: req.params.deliveryId, driverId: driver.id },
-      include: [{ model: Order, as: "order" }],
+      include: [
+        { model: Order, as: "order" },
+        { model: DeliveryHub, as: "destinationHub" },
+      ],
     });
     if (!delivery)
       return res
         .status(404)
         .json({ success: false, message: "Delivery not found" });
 
-    const { status } = req.body;
-    const validTransitions = {
-      assigned: ["picked_up"],
-      picked_up: ["in_transit"],
-      in_transit: ["at_destination_hub", "delivered", "failed"],
-      out_for_delivery: ["delivered", "failed"],
-    };
+    const { status, notes } = req.body;
+
+    // Define valid transitions based on delivery type
+    let validTransitions = {};
+
+    // Hub-to-hub transfer flow
+    if (delivery.status === "in_transit") {
+      validTransitions = {
+        in_transit: ["arrived_at_destination_hub", "failed"],
+      };
+    }
+    // Last-mile delivery flow
+    else {
+      validTransitions = {
+        assigned: ["picked_up"],
+        picked_up: ["in_transit"],
+        out_for_delivery: ["delivered", "failed"],
+      };
+    }
 
     if (!validTransitions[delivery.status]?.includes(status)) {
       return res.status(400).json({
         success: false,
-        message: `Cannot change from ${delivery.status} to ${status}`,
+        message: `Cannot change from ${delivery.status} to ${status}. Valid transitions: ${validTransitions[delivery.status]?.join(", ") || "none"}`,
       });
     }
 
@@ -123,10 +138,13 @@ exports.updateDeliveryStatus = async (req, res) => {
         status: "shipped",
         estimatedDelivery: eta,
       });
-    } else if (status === "at_destination_hub") {
-      // Transfer driver arrived at destination hub
+    } else if (status === "arrived_at_destination_hub") {
+      // Driver reports arrival at destination hub
+      // But only destination hub can confirm receipt
+      updates.status = "pending_hub_confirmation";
+      updates.notes =
+        notes || "Driver arrived at destination hub, awaiting confirmation";
       await driver.update({ isAvailable: true });
-      updates.driverId = null;
     } else if (status === "delivered") {
       updates.deliveredAt = new Date();
       await delivery.order.update({
@@ -135,7 +153,7 @@ exports.updateDeliveryStatus = async (req, res) => {
       });
       await driver.update({ isAvailable: true });
     } else if (status === "failed") {
-      updates.notes = req.body.notes || "Delivery failed";
+      updates.notes = notes || "Delivery failed";
       await driver.update({ isAvailable: true });
     }
 
@@ -240,6 +258,7 @@ exports.scanDelivery = async (req, res) => {
 };
 
 // Update driver location (called periodically during delivery)
+// Recalculates ETA dynamically based on remaining distance
 exports.updateLocation = async (req, res) => {
   try {
     const driver = await Driver.findOne({ where: { userId: req.user.id } });
@@ -260,34 +279,89 @@ exports.updateLocation = async (req, res) => {
       currentLongitude: longitude,
     });
 
-    // Also update any active delivery's current location
+    // Find any active delivery for this driver
     const activeDelivery = await Delivery.findOne({
       where: {
         driverId: driver.id,
-        status: { [Op.in]: ["picked_up", "in_transit"] },
+        status: { [Op.in]: ["picked_up", "in_transit", "out_for_delivery"] },
       },
+      include: [
+        { model: DeliveryHub, as: "destinationHub" },
+        { model: Order, as: "order" },
+      ],
     });
+
     if (activeDelivery) {
+      // Update delivery's current location
       await activeDelivery.update({
         currentLatitude: latitude,
         currentLongitude: longitude,
       });
 
-      // Recalculate ETA based on remaining distance
-      const remainingKm = haversineDistance(
-        latitude,
-        longitude,
-        activeDelivery.destinationLatitude,
-        activeDelivery.destinationLongitude,
-      );
-      const newEta = await calculateETA(remainingKm, req.user.driverProfile.id);
-      await activeDelivery.update({
-        estimatedDelivery: newEta,
-        distanceKm: remainingKm,
-      });
-      await activeDelivery.getOrder().then((order) => {
-        if (order) order.update({ estimatedDelivery: newEta });
-      });
+      // Determine destination based on delivery status
+      let destLat, destLng;
+      if (activeDelivery.status === "in_transit") {
+        // Hub-to-hub transfer: destination is the destination hub
+        destLat = activeDelivery.destinationHub?.latitude;
+        destLng = activeDelivery.destinationHub?.longitude;
+      } else {
+        // Last-mile delivery: destination is customer address
+        destLat = activeDelivery.destinationLatitude;
+        destLng = activeDelivery.destinationLongitude;
+      }
+
+      if (destLat && destLng) {
+        // Calculate remaining distance using Haversine
+        const remainingKm = haversineDistance(
+          latitude,
+          longitude,
+          destLat,
+          destLng,
+        );
+
+        // Dynamic ETA calculation based on delivery type
+        let avgSpeedKmh, baseHandlingMinutes;
+        if (activeDelivery.status === "in_transit") {
+          // Hub-to-hub transfer: faster speed (highways)
+          avgSpeedKmh = 40;
+          baseHandlingMinutes = 10;
+        } else {
+          // Last-mile delivery: slower speed (city streets)
+          avgSpeedKmh = 30;
+          baseHandlingMinutes = 15; // Time to find customer, handover
+        }
+
+        const travelHours = remainingKm / avgSpeedKmh;
+        const totalMinutes = baseHandlingMinutes + travelHours * 60;
+
+        const newEta = new Date();
+        newEta.setTime(newEta.getTime() + totalMinutes * 60 * 1000);
+
+        // Update delivery ETA and distance
+        await activeDelivery.update({
+          estimatedDelivery: newEta,
+          distanceKm: remainingKm,
+        });
+
+        // Update order ETA as well
+        if (activeDelivery.order) {
+          await activeDelivery.order.update({ estimatedDelivery: newEta });
+        }
+
+        console.log(
+          `[LOCATION UPDATE] Driver ${driver.id} at [${latitude}, ${longitude}] - Remaining: ${remainingKm.toFixed(2)}km, ETA: ${newEta.toISOString()}`,
+        );
+
+        return res.json({
+          success: true,
+          message: "Location and ETA updated",
+          data: {
+            remainingDistance: remainingKm,
+            estimatedDelivery: newEta,
+            deliveryId: activeDelivery.id,
+          },
+        });
+      }
     }
 
     res.json({ success: true, message: "Location updated" });
@@ -342,7 +416,9 @@ exports.getStats = async (req, res) => {
         Delivery.count({
           where: {
             driverId: driver.id,
-            status: { [Op.in]: ["picked_up", "in_transit"] },
+            status: {
+              [Op.in]: ["picked_up", "in_transit", "out_for_delivery"],
+            },
           },
         }),
         Delivery.count({ where: { driverId: driver.id, status: "assigned" } }),
@@ -355,6 +431,59 @@ exports.getStats = async (req, res) => {
   } catch (error) {
     console.error("Get driver stats error:", error);
     res.status(500).json({ success: false, message: "Failed to get stats" });
+  }
+};
+
+// Report arrival at destination hub (for hub-to-hub transfers)
+exports.reportHubArrival = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ where: { userId: req.user.id } });
+    if (!driver)
+      return res
+        .status(404)
+        .json({ success: false, message: "Driver not found" });
+
+    const { deliveryId } = req.params;
+
+    const delivery = await Delivery.findOne({
+      where: { id: deliveryId, driverId: driver.id },
+      include: [{ model: DeliveryHub, as: "destinationHub" }],
+    });
+
+    if (!delivery)
+      return res.status(404).json({
+        success: false,
+        message: "Delivery not found or not assigned to you",
+      });
+
+    if (delivery.status !== "in_transit") {
+      return res.status(400).json({
+        success: false,
+        message: "Delivery must be in_transit to report arrival",
+      });
+    }
+
+    // Driver reports arrival, but hub must confirm
+    await delivery.update({
+      status: "pending_hub_confirmation",
+      notes: `Driver arrived at ${delivery.destinationHub?.name || "destination hub"}. Awaiting hub confirmation.`,
+    });
+
+    res.json({
+      success: true,
+      message:
+        "Arrival reported. Please wait for destination hub to confirm receipt.",
+      data: {
+        deliveryId: delivery.id,
+        status: "pending_hub_confirmation",
+        destinationHub: delivery.destinationHub?.name,
+      },
+    });
+  } catch (error) {
+    console.error("Report hub arrival error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to report arrival" });
   }
 };
 

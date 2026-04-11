@@ -367,12 +367,33 @@ import { HubService } from '../services/hub.service';
           Same hub — will skip transit and mark as arrived.
         </p>
         <p class="sub" *ngIf="dispatchParcel?.hubId !== dispatchParcel?.destinationHubId">
-          Parcel will be marked as in transit to the destination hub. No driver assignment needed
-          for hub-to-hub transfers.
+          Assign a transfer driver for hub-to-hub delivery. The driver will transport the parcel and
+          provide real-time location tracking.
         </p>
+        <div class="form-group" *ngIf="dispatchParcel?.hubId !== dispatchParcel?.destinationHubId">
+          <label>Select Transfer Driver <span style="color: #ef4444">*</span></label>
+          <select [(ngModel)]="selectedTransferDriverId">
+            <option value="">Choose driver...</option>
+            <option *ngFor="let d of availableDrivers" [value]="d.id">
+              {{ d.fullName }} — {{ d.vehicleType }} ({{ d.plateNumber }})
+            </option>
+          </select>
+          <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display: block;">
+            Driver will provide real-time tracking during transit
+          </small>
+        </div>
         <div class="modal-actions">
           <button class="modal-btn secondary" (click)="showDispatch = false">Cancel</button>
-          <button class="modal-btn primary" (click)="dispatchToHub()">Dispatch</button>
+          <button
+            class="modal-btn primary"
+            (click)="dispatchToHub()"
+            [disabled]="
+              dispatchParcel?.hubId !== dispatchParcel?.destinationHubId &&
+              !selectedTransferDriverId
+            "
+          >
+            Dispatch
+          </button>
         </div>
       </div>
     </div>
@@ -1127,6 +1148,7 @@ export class HubDashboardComponent implements OnInit {
   assignParcel: any = null;
   selectedDriverId = '';
   selectedRiderId = '';
+  selectedTransferDriverId = '';
   availableDrivers: any[] = [];
 
   // Receive modal state
@@ -1323,8 +1345,10 @@ export class HubDashboardComponent implements OnInit {
 
   showDispatchModal(p: any) {
     this.dispatchParcel = p;
+    this.selectedTransferDriverId = '';
     this.showDispatch = true;
-    // No driver needed for hub-to-hub transfers
+    // Load available drivers for hub-to-hub transfer
+    this.loadAvailableDrivers();
   }
 
   showAssignModal(p: any) {
@@ -1352,10 +1376,19 @@ export class HubDashboardComponent implements OnInit {
 
   dispatchToHub() {
     if (!this.dispatchParcel) return;
-    // No driver needed for hub-to-hub transfers
-    this.hubService.dispatchToHub(this.dispatchParcel.id).subscribe({
+
+    // If different hubs, driver is required
+    if (
+      this.dispatchParcel.hubId !== this.dispatchParcel.destinationHubId &&
+      !this.selectedTransferDriverId
+    ) {
+      return;
+    }
+
+    this.hubService.dispatchToHub(this.dispatchParcel.id, this.selectedTransferDriverId).subscribe({
       next: (res: any) => {
         this.showDispatch = false;
+        this.selectedTransferDriverId = '';
         if (res.success) {
           this.loadParcels();
         }
@@ -1363,14 +1396,16 @@ export class HubDashboardComponent implements OnInit {
       },
       error: () => {
         this.showDispatch = false;
+        this.selectedTransferDriverId = '';
         this.cdr.detectChanges();
       },
     });
   }
 
   arriveAtHub(p: any) {
+    if (!this.selectedHubId) return;
     p._loading = true;
-    this.hubService.arriveAtHub(p.id).subscribe({
+    this.hubService.arriveAtHub(p.id, this.selectedHubId).subscribe({
       next: (res: any) => {
         p._loading = false;
         if (res.success) {

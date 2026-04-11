@@ -1220,15 +1220,28 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
           driverLat,
           driverLng,
           this.tracking.driver?.fullName || 'Transfer Driver',
+          this.tracking.driver?.vehicleType,
         );
       }
-      if (hubLat && hubLng && destHubLat && destHubLng) {
+
+      // Draw route from driver's current position (if available) to destination hub
+      // This makes the route dynamic as the driver moves
+      if (driverLat && driverLng && destHubLat && destHubLng) {
+        // Route from driver's current position to destination hub
+        this.fetchRouteWithEta([driverLat, driverLng], [destHubLat, destHubLng]);
+        const pts: [number, number][] = [
+          [driverLat, driverLng],
+          [destHubLat, destHubLng],
+        ];
+        if (hubLat && hubLng) pts.push([hubLat, hubLng]);
+        this.fitBounds(pts);
+      } else if (hubLat && hubLng && destHubLat && destHubLng) {
+        // Fallback: if no driver location yet, show route from origin to destination
         this.fetchRouteWithEta([hubLat, hubLng], [destHubLat, destHubLng]);
         const pts: [number, number][] = [
           [hubLat, hubLng],
           [destHubLat, destHubLng],
         ];
-        if (driverLat && driverLng) pts.push([driverLat, driverLng]);
         this.fitBounds(pts);
       }
     }
@@ -1259,6 +1272,7 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
           driverLat,
           driverLng,
           this.tracking.driver?.fullName || 'Rider',
+          this.tracking.driver?.vehicleType,
         );
       }
       const fromLat = driverLat || destHubLat;
@@ -1323,23 +1337,128 @@ export class OrderTrackingComponent implements OnInit, OnDestroy {
   }
 
   private addMarker(lat: number, lng: number, color: string, popup: string): any {
-    const icon = L.divIcon({
-      html: `<div style="background:${color};width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3)"></div>`,
+    // Determine icon type based on color
+    let icon = '📍'; // default pin
+    let bgColor = color;
+
+    if (color === '#6366f1') {
+      // Origin hub - blue
+      icon = '🏢';
+      bgColor = '#6366f1';
+    } else if (color === '#8b5cf6') {
+      // Destination hub - purple
+      icon = '🏢';
+      bgColor = '#8b5cf6';
+    } else if (color === '#ef4444') {
+      // Customer address - red
+      icon = '🏠';
+      bgColor = '#ef4444';
+    }
+
+    const divIcon = L.divIcon({
+      html: `
+        <div style="
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        ">
+          <div style="
+            background: ${bgColor};
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+          ">${icon}</div>
+          <div style="
+            position: absolute;
+            bottom: -6px;
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid ${bgColor};
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+          "></div>
+        </div>
+      `,
       className: '',
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      iconSize: [36, 42],
+      iconAnchor: [18, 42],
     });
-    return L.marker([lat, lng], { icon }).addTo(this.map).bindPopup(popup);
+    return L.marker([lat, lng], { icon: divIcon }).addTo(this.map).bindPopup(popup);
   }
 
-  private addDriverMarker(lat: number, lng: number, name: string): any {
+  private addDriverMarker(lat: number, lng: number, name: string, vehicleType?: string): any {
+    // Determine icon based on vehicle type
+    let vehicleIcon = '🚗'; // default car
+    let vehicleColor = '#ff6b35';
+
+    if (vehicleType) {
+      const type = vehicleType.toLowerCase();
+      if (type.includes('truck') || type.includes('van')) {
+        vehicleIcon = '🚚';
+        vehicleColor = '#3b82f6'; // blue for trucks
+      } else if (type.includes('motorcycle') || type.includes('motor') || type.includes('bike')) {
+        vehicleIcon = '🏍️';
+        vehicleColor = '#10b981'; // green for motorcycles
+      } else if (type.includes('bicycle') || type.includes('bike')) {
+        vehicleIcon = '🚲';
+        vehicleColor = '#8b5cf6'; // purple for bicycles
+      }
+    }
+
     const icon = L.divIcon({
-      html: '<div style="background:#ff6b35;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center"><div style="width:6px;height:6px;background:white;border-radius:50%"></div></div>',
+      html: `
+        <div style="
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        ">
+          <div style="
+            background: ${vehicleColor};
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            animation: pulse 2s infinite;
+          ">${vehicleIcon}</div>
+          <div style="
+            position: absolute;
+            bottom: -8px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid ${vehicleColor};
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+          "></div>
+        </div>
+        <style>
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+          }
+        </style>
+      `,
       className: '',
-      iconSize: [22, 22],
-      iconAnchor: [11, 11],
+      iconSize: [40, 48],
+      iconAnchor: [20, 48],
     });
-    return L.marker([lat, lng], { icon }).addTo(this.map).bindPopup(`<b>Driver</b><br>${name}`);
+    return L.marker([lat, lng], { icon })
+      .addTo(this.map)
+      .bindPopup(`<b>Driver</b><br>${name}<br><small>${vehicleType || 'Vehicle'}</small>`);
   }
 
   private fitBounds(points: [number, number][]) {

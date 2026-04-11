@@ -411,12 +411,18 @@ exports.receiveParcel = async (req, res) => {
   }
 };
 
-// Dispatch parcel to destination hub (assign transfer driver)
-// Dispatch parcel to destination hub (no driver needed - hub-to-hub transfer)
+// Dispatch parcel to destination hub (assign transfer driver for hub-to-hub)
 exports.dispatchToHub = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { deliveryId } = req.params;
+    const { driverId } = req.body;
+
+    if (!driverId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Transfer driver is required" });
+    }
 
     const delivery = await Delivery.findByPk(deliveryId, {
       include: [
@@ -450,6 +456,21 @@ exports.dispatchToHub = async (req, res) => {
       });
     }
 
+    // Verify driver exists and is available
+    const driver = await Driver.findByPk(driverId);
+    if (!driver) {
+      await t.rollback();
+      return res
+        .status(404)
+        .json({ success: false, message: "Driver not found" });
+    }
+    if (!driver.isAvailable) {
+      await t.rollback();
+      return res
+        .status(400)
+        .json({ success: false, message: "Driver is not available" });
+    }
+
     // Calculate distance between hubs
     const distanceKm = haversineDistance(
       delivery.hub.latitude,
@@ -458,22 +479,36 @@ exports.dispatchToHub = async (req, res) => {
       delivery.destinationHub.longitude,
     );
 
-    // Mark as in transit (no driver assignment for hub-to-hub)
+    // Calculate initial ETA for hub-to-hub transfer
+    const avgSpeedKmh = 40; // Higher speed for inter-hub transfers (highways)
+    const baseHandlingMinutes = 15; // Loading/unloading time
+    const travelHours = distanceKm / avgSpeedKmh;
+    const totalMinutes = baseHandlingMinutes + travelHours * 60;
+
+    const eta = new Date();
+    eta.setTime(eta.getTime() + totalMinutes * 60 * 1000);
+
+    // Mark as in transit with assigned driver
     await delivery.update(
       {
         status: "in_transit",
+        driverId,
         distanceKm,
+        estimatedDelivery: eta,
         currentLatitude: delivery.hub.latitude,
         currentLongitude: delivery.hub.longitude,
       },
       { transaction: t },
     );
 
+    // Mark driver as unavailable
+    await driver.update({ isAvailable: false }, { transaction: t });
+
     await t.commit();
 
     res.json({
       success: true,
-      message: "Parcel dispatched to destination hub.",
+      message: "Parcel dispatched with transfer driver assigned.",
       data: delivery,
     });
   } catch (error) {
@@ -486,25 +521,44 @@ exports.dispatchToHub = async (req, res) => {
 };
 
 // Mark parcel as arrived at destination hub
+// Only destination hub can confirm arrival (not the driver)
 exports.arriveAtHub = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { deliveryId } = req.params;
+    const { hubId } = req.body;
 
-    const delivery = await Delivery.findByPk(deliveryId);
+    if (!hubId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Hub ID is required" });
+    }
+
+    const delivery = await Delivery.findByPk(deliveryId, {
+      include: [{ model: DeliveryHub, as: "destinationHub" }],
+    });
     if (!delivery)
       return res
         .status(404)
         .json({ success: false, message: "Delivery not found" });
 
-    if (delivery.status !== "in_transit") {
-      return res.status(400).json({
+    // Verify this is the destination hub
+    if (delivery.destinationHubId !== hubId) {
+      return res.status(403).json({
         success: false,
-        message: "Parcel must be in_transit to mark as arrived",
+        message: "Only the destination hub can confirm parcel arrival",
       });
     }
 
-    // Free the transfer driver
+    // Accept both in_transit and pending_hub_confirmation
+    if (!["in_transit", "pending_hub_confirmation"].includes(delivery.status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Parcel must be in_transit or pending_hub_confirmation to mark as arrived. Current status: ${delivery.status}`,
+      });
+    }
+
+    // Free the transfer driver if assigned
     if (delivery.driverId) {
       await Driver.update(
         { isAvailable: true },
@@ -516,6 +570,8 @@ exports.arriveAtHub = async (req, res) => {
       {
         status: "at_destination_hub",
         driverId: null,
+        currentLatitude: delivery.destinationHub.latitude,
+        currentLongitude: delivery.destinationHub.longitude,
       },
       { transaction: t },
     );
@@ -524,7 +580,7 @@ exports.arriveAtHub = async (req, res) => {
 
     res.json({
       success: true,
-      message: "Parcel arrived at destination hub.",
+      message: "Parcel arrival confirmed at destination hub.",
       data: delivery,
     });
   } catch (error) {
@@ -720,6 +776,42 @@ exports.regenerateQR = async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: "Failed to regenerate QR code" });
+  }
+};
+
+// Get available drivers for hub (for hub-to-hub or last-mile assignment)
+exports.getAvailableDrivers = async (req, res) => {
+  try {
+    const { hubId } = req.params;
+
+    const hub = await DeliveryHub.findByPk(hubId);
+    if (!hub)
+      return res.status(404).json({ success: false, message: "Hub not found" });
+
+    // Get all available drivers assigned to this hub
+    const drivers = await Driver.findAll({
+      where: {
+        hubId,
+        isAvailable: true,
+        isActive: true,
+      },
+      attributes: [
+        "id",
+        "fullName",
+        "phone",
+        "vehicleType",
+        "plateNumber",
+        "isAvailable",
+      ],
+      order: [["fullName", "ASC"]],
+    });
+
+    res.json({ success: true, data: drivers });
+  } catch (error) {
+    console.error("Get available drivers error:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Failed to get available drivers" });
   }
 };
 
