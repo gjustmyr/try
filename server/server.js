@@ -33,6 +33,7 @@ const paymentRoutes = require("./routes/payment.routes");
 const inventoryRoutes = require("./routes/inventory.routes");
 const taxRoutes = require("./routes/tax.routes");
 const couponRoutes = require("./routes/coupon.routes");
+const notificationRoutes = require("./routes/notification.routes");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -65,6 +66,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/tax", taxRoutes);
 app.use("/api/coupons", couponRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // Unified search endpoint
 const productService = require("./services/product.service");

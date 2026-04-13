@@ -11,7 +11,7 @@ import { RouterModule } from '@angular/router';
       <div class="container">
         <div class="footer-content">
           <div class="footer-section">
-            <h4>About MultiShop</h4>
+            <h4>About EzyMart</h4>
             <p>
               Your trusted multi-vendor marketplace connecting buyers with quality sellers
               worldwide.
@@ -54,7 +54,7 @@ import { RouterModule } from '@angular/router';
           </div>
         </div>
         <div class="footer-bottom">
-          <p>&copy; 2026 MultiShop Marketplace. All rights reserved.</p>
+          <p>&copy; 2026 EzyMart Marketplace. All rights reserved.</p>
           <div class="payment-methods">
             <i class="pi pi-credit-card"></i>
             <i class="pi pi-paypal"></i>

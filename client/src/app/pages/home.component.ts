@@ -16,7 +16,7 @@ import { CATEGORIES, Category } from '../data/categories';
   styleUrl: './home.component.css',
 })
 export class HomeComponent implements OnInit {
-  title = 'MultiShop Marketplace';
+  title = 'EzyMart Marketplace';
   products: any[] = [];
   shops: any[] = [];
   isLoading = false;

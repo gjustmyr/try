@@ -9,6 +9,7 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 const crypto = require("crypto");
+const { sendOrderNotification } = require("../utils/notification");
 
 // Get driver profile
 exports.getProfile = async (req, res) => {
@@ -103,23 +104,17 @@ exports.updateDeliveryStatus = async (req, res) => {
 
     const { status, notes } = req.body;
 
-    // Define valid transitions based on delivery type
-    let validTransitions = {};
-
-    // Hub-to-hub transfer flow
-    if (delivery.status === "in_transit") {
-      validTransitions = {
-        in_transit: ["arrived_at_destination_hub", "failed"],
-      };
-    }
-    // Last-mile delivery flow
-    else {
-      validTransitions = {
-        assigned: ["picked_up"],
-        picked_up: ["in_transit"],
-        out_for_delivery: ["delivered", "failed"],
-      };
-    }
+    // Define valid transitions for all delivery statuses
+    const validTransitions = {
+      pending_drop_off: ["received_at_hub", "failed"],
+      received_at_hub: ["in_transit", "failed"],
+      in_transit: ["pending_hub_confirmation", "at_destination_hub", "failed"],
+      pending_hub_confirmation: ["at_destination_hub", "failed"],
+      at_destination_hub: ["out_for_delivery", "failed"],
+      out_for_delivery: ["delivered", "failed"],
+      assigned: ["picked_up", "in_transit", "out_for_delivery", "failed"],
+      picked_up: ["in_transit", "out_for_delivery", "delivered", "failed"],
+    };
 
     if (!validTransitions[delivery.status]?.includes(status)) {
       return res.status(400).json({
@@ -138,13 +133,34 @@ exports.updateDeliveryStatus = async (req, res) => {
         status: "shipped",
         estimatedDelivery: eta,
       });
-    } else if (status === "arrived_at_destination_hub") {
+    } else if (status === "in_transit") {
+      // Driver is now in transit
+      if (!delivery.pickedUpAt) {
+        updates.pickedUpAt = new Date();
+      }
+      const eta = await calculateETA(delivery.distanceKm, driver.id);
+      updates.estimatedDelivery = eta;
+      await delivery.order.update({
+        status: "shipped",
+        estimatedDelivery: eta,
+      });
+    } else if (status === "out_for_delivery") {
+      // Driver is now out for final delivery to customer
+      const eta = await calculateETA(delivery.distanceKm, driver.id);
+      updates.estimatedDelivery = eta;
+      await delivery.order.update({
+        status: "shipped",
+        estimatedDelivery: eta,
+      });
+    } else if (
+      status === "pending_hub_confirmation" ||
+      status === "at_destination_hub"
+    ) {
       // Driver reports arrival at destination hub
-      // But only destination hub can confirm receipt
-      updates.status = "pending_hub_confirmation";
-      updates.notes =
-        notes || "Driver arrived at destination hub, awaiting confirmation";
-      await driver.update({ isAvailable: true });
+      updates.notes = notes || "Driver arrived at destination hub";
+      if (status === "at_destination_hub") {
+        await driver.update({ isAvailable: true });
+      }
     } else if (status === "delivered") {
       updates.deliveredAt = new Date();
       await delivery.order.update({
@@ -157,7 +173,33 @@ exports.updateDeliveryStatus = async (req, res) => {
       await driver.update({ isAvailable: true });
     }
 
+    if (notes && status !== "failed") {
+      updates.notes = notes;
+    }
+
     await delivery.update(updates);
+
+    // Send notifications for delivery status changes
+    const notificationMap = {
+      picked_up: "delivery_picked_up",
+      in_transit: "delivery_in_transit",
+      out_for_delivery: "delivery_out_for_delivery",
+      at_destination_hub: "delivery_at_hub",
+      delivered: "order_delivered",
+    };
+
+    if (notificationMap[status]) {
+      await sendOrderNotification(
+        delivery.order.userId,
+        delivery.orderId,
+        notificationMap[status],
+        delivery.order.orderNumber,
+        {
+          trackingNumber: delivery.trackingNumber,
+          hubName: delivery.destinationHub?.name,
+        },
+      );
+    }
 
     res.json({
       success: true,

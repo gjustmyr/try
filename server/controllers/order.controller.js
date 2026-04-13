@@ -14,6 +14,7 @@ const {
 } = require("../models");
 const { sequelize } = require("../config/database");
 const { Op } = require("sequelize");
+const { sendOrderNotification } = require("../utils/notification");
 
 // Place order
 exports.placeOrder = async (req, res) => {
@@ -326,6 +327,14 @@ exports.placeOrder = async (req, res) => {
     await Cart.destroy({ where: { id: cartItemIds, userId }, transaction: t });
 
     await t.commit();
+
+    // Send notification for order placed
+    await sendOrderNotification(
+      userId,
+      order.id,
+      "order_placed",
+      order.orderNumber,
+    );
 
     // Debug: Log the created order values
     console.log("Order created:", {
@@ -714,6 +723,17 @@ exports.updateOrderStatus = async (req, res) => {
 
       await order.update(updateData, { transaction: t });
       await t.commit();
+
+      // Send notification for status change
+      await sendOrderNotification(
+        order.userId,
+        order.id,
+        `order_${status}`,
+        order.orderNumber,
+        {
+          trackingNumber: updateData.trackingNumber,
+        },
+      );
 
       res.json({
         success: true,

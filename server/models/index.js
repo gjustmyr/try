@@ -13,6 +13,7 @@ const InventoryLog = require("./inventory-log.model");
 const TaxConfig = require("./tax-config.model");
 const Coupon = require("./coupon.model");
 const CouponUsage = require("./coupon-usage.model");
+const Notification = require("./notification.model");
 
 // Define associations
 User.hasOne(Seller, {
@@ -306,6 +307,23 @@ CouponUsage.belongsTo(Order, {
   as: "order",
 });
 
+// Notification associations
+User.hasMany(Notification, {
+  foreignKey: "userId",
+  as: "notifications",
+  onDelete: "CASCADE",
+});
+
+Notification.belongsTo(User, {
+  foreignKey: "userId",
+  as: "user",
+});
+
+Notification.belongsTo(Order, {
+  foreignKey: "orderId",
+  as: "order",
+});
+
 module.exports = {
   User,
   Seller,
@@ -323,4 +341,5 @@ module.exports = {
   Coupon,
   CouponUsage,
   Wishlist,
+  Notification,
 };

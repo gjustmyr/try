@@ -8,18 +8,19 @@ import { WishlistService } from '../services/wishlist.service';
 import { ProductService } from '../services/product.service';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
+import { NotificationBellComponent } from './notification-bell.component';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NotificationBellComponent],
   template: `
     <!-- Top Bar -->
     <div class="top-bar">
       <div class="container">
         <div class="top-bar-left">
           <span><i class="pi pi-phone"></i> +1-202-555-0156</span>
-          <span><i class="pi pi-envelope"></i> support&#64;multishop.com</span>
+          <span><i class="pi pi-envelope"></i> support&#64;ezymart.com</span>
         </div>
         <div class="top-bar-right">
           <button class="seller-top-btn" (click)="navigate('/seller-register')">
@@ -37,7 +38,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
           <div class="logo" (click)="navigate('/')">
             <i class="pi pi-shopping-bag logo-icon"></i>
             <div>
-              <h1>MultiShop</h1>
+              <h1>EzyMart</h1>
             </div>
           </div>
 
@@ -131,6 +132,7 @@ import { debounceTime, distinctUntilChanged } from 'rxjs';
               <i class="pi pi-heart"></i>
               <span class="badge">{{ wishlistCount }}</span>
             </button>
+            <app-notification-bell *ngIf="currentUser"></app-notification-bell>
             <button class="icon-btn cart-btn" (click)="navigate('/cart')">
               <i class="pi pi-shopping-cart"></i>
               <span class="badge">{{ cartCount }}</span>
